@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
+import { isDbEnabled, prisma } from "@/lib/db";
+import { assertAdminAccess } from "@/lib/security/adminAuth";
 
 const moderationSchema = z.object({
   titleId: z.string().startsWith("tt"),
@@ -10,10 +11,18 @@ const moderationSchema = z.object({
 });
 
 export async function POST(request: Request): Promise<Response> {
+  if (!assertAdminAccess(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const parsed = moderationSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  if (!isDbEnabled()) {
+    return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
   }
 
   try {
@@ -33,6 +42,6 @@ export async function POST(request: Request): Promise<Response> {
 
     return NextResponse.json({ movie });
   } catch {
-    return NextResponse.json({ ok: true, simulated: true });
+    return NextResponse.json({ error: "Moderation failed" }, { status: 503 });
   }
 }

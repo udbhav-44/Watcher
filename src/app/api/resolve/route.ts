@@ -3,9 +3,11 @@ import { z } from "zod";
 
 import { parseTitleId } from "@/lib/imdb/parseTitleId";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
+import { resolveVidkingUrlFromIdentifier } from "@/lib/vidking/resolveVidkingUrl";
 
 const resolveSchema = z.object({
-  imdbUrlOrId: z.string().min(2)
+  imdbUrlOrId: z.string().min(2),
+  provider: z.enum(["playimdb", "vidking"]).default("playimdb")
 });
 
 export async function POST(request: Request): Promise<Response> {
@@ -20,8 +22,25 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Could not parse IMDb title id" }, { status: 422 });
   }
 
-  return NextResponse.json({
-    titleId,
-    playableUrl: toPlayableUrl(titleId, parsed.data.imdbUrlOrId)
-  });
+  const provider = parsed.data.provider;
+  if (provider === "vidking") {
+    const vidkingUrl = await resolveVidkingUrlFromIdentifier(titleId);
+    if (!vidkingUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not resolve Vidking URL from this IMDb id. Vidking expects TMDB id (use TMDB_API_KEY for automatic mapping)."
+        },
+        { status: 422 }
+      );
+    }
+
+    return NextResponse.json({
+      titleId,
+      provider,
+      playableUrl: vidkingUrl
+    });
+  }
+
+  return NextResponse.json({ titleId, provider, playableUrl: toPlayableUrl(titleId, parsed.data.imdbUrlOrId, "playimdb") });
 }

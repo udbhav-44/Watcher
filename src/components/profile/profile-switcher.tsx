@@ -4,31 +4,63 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-const profileOptions = ["default", "night-owl", "cinema-club"];
+type Profile = {
+  key: string;
+  displayName: string;
+};
 
 export const ProfileSwitcher = (): JSX.Element => {
-  const [profileKey, setProfileKey] = useState("default");
+  const [profileKey, setProfileKey] = useState("guest");
+  const [profiles, setProfiles] = useState<Profile[]>([
+    { key: "guest", displayName: "Guest" }
+  ]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("campus.profile");
-    if (saved) setProfileKey(saved);
+    Promise.all([
+      fetch("/api/profile", { credentials: "same-origin" }).then((res) =>
+        res.json()
+      ),
+      fetch("/api/profiles", { credentials: "same-origin" }).then((res) =>
+        res.json()
+      )
+    ])
+      .then(
+        ([active, all]: [
+          { profileKey?: string },
+          { profiles?: Profile[] }
+        ]) => {
+          setProfileKey(active.profileKey ?? "guest");
+          setProfiles(
+            all.profiles?.length
+              ? all.profiles
+              : [{ key: "guest", displayName: "Guest" }]
+          );
+        }
+      )
+      .catch(() => setProfiles([{ key: "guest", displayName: "Guest" }]));
   }, []);
 
   const selectProfile = (nextKey: string): void => {
     setProfileKey(nextKey);
-    window.localStorage.setItem("campus.profile", nextKey);
+    void fetch("/api/profile", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileKey: nextKey })
+    });
   };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {profileOptions.map((option) => (
+      <span className="text-sm text-white/56">Profile</span>
+      {profiles.map((profile) => (
         <Button
-          key={option}
-          variant={profileKey === option ? "primary" : "ghost"}
+          key={profile.key}
+          variant={profileKey === profile.key ? "primary" : "ghost"}
           size="sm"
-          onClick={() => selectProfile(option)}
+          onClick={() => selectProfile(profile.key)}
         >
-          {option}
+          {profile.displayName}
         </Button>
       ))}
     </div>

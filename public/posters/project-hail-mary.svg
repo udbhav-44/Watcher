@@ -1,0 +1,15 @@
+<svg width="700" height="1050" viewBox="0 0 700 1050" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="1050" fill="#090B12"/>
+  <circle cx="560" cy="170" r="120" fill="#5EE3FF" fill-opacity="0.25"/>
+  <circle cx="120" cy="900" r="180" fill="#7A6CFF" fill-opacity="0.3"/>
+  <rect x="35" y="35" width="630" height="980" rx="26" fill="url(#bg)"/>
+  <text x="80" y="820" fill="white" font-family="Arial, sans-serif" font-size="54" font-weight="700">PROJECT</text>
+  <text x="80" y="885" fill="white" font-family="Arial, sans-serif" font-size="54" font-weight="700">HAIL MARY</text>
+  <text x="80" y="935" fill="#AAB1CB" font-family="Arial, sans-serif" font-size="28">CampusStream Edition</text>
+  <defs>
+    <linearGradient id="bg" x1="350" y1="35" x2="350" y2="1015" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173B4F"/>
+      <stop offset="1" stop-color="#332B5A"/>
+    </linearGradient>
+  </defs>
+</svg>

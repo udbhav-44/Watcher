@@ -10,14 +10,19 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CampusStream",
-  description: "Premium campus streaming experience"
+  description: "Watch, search, and save titles."
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>): JSX.Element {
+export default function RootLayout({
+  children
+}: Readonly<{ children: React.ReactNode }>): JSX.Element {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-black focus:px-3 focus:py-2">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-black focus:px-3 focus:py-2"
+        >
           Skip to content
         </a>
         <Navbar />

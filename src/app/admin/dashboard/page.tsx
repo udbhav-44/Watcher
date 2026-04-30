@@ -1,24 +1,25 @@
-import { Card } from "@/components/ui/card";
+import { notFound } from "next/navigation";
 
-const tiles = [
-  { title: "Ingest Jobs", value: "12 Today", hint: "2 pending validation" },
-  { title: "Broken Links", value: "3", hint: "Needs moderation review" },
-  { title: "Metadata Mismatches", value: "7", hint: "Auto-detected in nightly sync" },
-  { title: "Featured Rails", value: "9 active", hint: "Curated by media team" }
-];
+import { Card } from "@/components/ui/card";
+import { env } from "@/lib/config/env";
 
 export default function AdminDashboardPage(): JSX.Element {
+  if (env.NEXT_PUBLIC_ENABLE_ADMIN_DASHBOARD !== "true") {
+    notFound();
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {tiles.map((tile) => (
-          <Card key={tile.title} className="space-y-2">
-            <p className="text-sm text-white/60">{tile.title}</p>
-            <p className="text-2xl font-semibold">{tile.value}</p>
-            <p className="text-xs text-white/50">{tile.hint}</p>
-          </Card>
-        ))}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-2">
+          <p className="text-sm text-white/60">Catalog ingest</p>
+          <p className="text-sm text-white/80">Use the secured `POST /api/admin/ingest` route with your internal admin key.</p>
+        </Card>
+        <Card className="space-y-2">
+          <p className="text-sm text-white/60">Moderation</p>
+          <p className="text-sm text-white/80">Use the secured `POST /api/admin/moderation` route to activate/deactivate titles.</p>
+        </Card>
       </div>
     </div>
   );

@@ -1,43 +1,76 @@
+import Image from "next/image";
 import Link from "next/link";
-import { PlayCircle } from "lucide-react";
+import { Info, Play } from "lucide-react";
 
 import { MovieRail } from "@/components/movies/movie-rail";
 import { ContinueWatching } from "@/components/profile/continue-watching";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { getFeaturedRails } from "@/lib/data/movies";
 
 export default async function HomePage(): Promise<JSX.Element> {
   const rails = await getFeaturedRails();
   const heroMovie = rails[0]?.movies[0];
+  const heroArtwork = heroMovie?.backdropUrl ?? heroMovie?.posterUrl;
+  const heroMeta = heroMovie
+    ? [
+        heroMovie.releaseYear,
+        heroMovie.maturityRating,
+        heroMovie.durationMinutes ? `${heroMovie.durationMinutes} min` : null
+      ]
+        .filter(Boolean)
+        .join(" | ")
+    : "";
 
   return (
     <div className="space-y-10">
-      <Card className="relative overflow-hidden p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(94,227,255,0.2),transparent_45%)]" />
-        <div className="relative flex flex-col gap-4 md:max-w-2xl">
-          <p className="text-xs uppercase tracking-[0.2em] text-cyan-300">Campus Premium Streaming</p>
-          <h1 className="text-4xl font-bold md:text-5xl">Futuristic Movie Nights, Now On Campus</h1>
-          <p className="text-sm text-white/75 md:text-base">
-            Curated collections, cinematic transitions, and instant play links powered from IMDb title IDs.
-          </p>
+      <section className="relative min-h-[520px] overflow-hidden rounded-lg border border-white/10 bg-[#101010]">
+        {heroArtwork && heroMovie && (
+          <div className="absolute inset-0">
+            <Image
+              src={heroArtwork}
+              alt={heroMovie.title}
+              fill
+              className="object-cover"
+              sizes="100vw"
+              priority
+            />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-[#070707]/82 to-[#070707]/18" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-transparent to-black/10" />
+        <div className="relative flex min-h-[520px] items-end p-5 md:p-10">
           {heroMovie && (
-            <div className="flex items-center gap-3">
-              <Link href={`/watch/${heroMovie.titleId}`}>
-                <Button size="lg">
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  Play {heroMovie.title}
-                </Button>
-              </Link>
-              <Link href={`/title/${heroMovie.titleId}`}>
-                <Button variant="outline" size="lg">
-                  View Details
-                </Button>
-              </Link>
+            <div className="max-w-2xl space-y-4">
+              <p className="text-xs tracking-[0.22em] text-[#f2c46d] uppercase">
+                Featured
+              </p>
+              <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
+                {heroMovie.title}
+              </h1>
+              {heroMeta && <p className="text-sm text-white/72">{heroMeta}</p>}
+              {heroMovie.synopsis && (
+                <p className="max-w-xl text-sm leading-6 text-white/75 md:text-base">
+                  {heroMovie.synopsis}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={`/watch/${heroMovie.titleId}`}>
+                  <Button size="lg">
+                    <Play className="mr-2 h-5 w-5 fill-current" />
+                    Play
+                  </Button>
+                </Link>
+                <Link href={`/title/${heroMovie.titleId}`}>
+                  <Button variant="outline" size="lg">
+                    <Info className="mr-2 h-5 w-5" />
+                    Details
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </div>
-      </Card>
+      </section>
 
       <ContinueWatching />
 

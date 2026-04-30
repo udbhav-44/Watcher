@@ -1,0 +1,14 @@
+<svg width="700" height="1050" viewBox="0 0 700 1050" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="1050" fill="#0A0D16"/>
+  <rect x="35" y="35" width="630" height="980" rx="26" fill="url(#bg)"/>
+  <rect x="160" y="260" width="380" height="420" rx="16" stroke="#5EE3FF" stroke-opacity="0.4"/>
+  <rect x="200" y="300" width="300" height="340" rx="12" stroke="#7A6CFF" stroke-opacity="0.45"/>
+  <text x="80" y="820" fill="white" font-family="Arial, sans-serif" font-size="64" font-weight="700">INCEPTION</text>
+  <text x="80" y="885" fill="#AAB1CB" font-family="Arial, sans-serif" font-size="30">Dreams within dreams</text>
+  <defs>
+    <linearGradient id="bg" x1="350" y1="35" x2="350" y2="1015" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2E43"/>
+      <stop offset="1" stop-color="#2E244A"/>
+    </linearGradient>
+  </defs>
+</svg>

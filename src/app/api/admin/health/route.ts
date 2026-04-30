@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/db";
+import { isDbEnabled, prisma } from "@/lib/db";
+import { assertAdminAccess } from "@/lib/security/adminAuth";
 
-export async function GET(): Promise<Response> {
-  if (!process.env.DATABASE_URL) {
+export async function GET(request: Request): Promise<Response> {
+  if (!assertAdminAccess(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isDbEnabled()) {
     return NextResponse.json({
       status: "degraded",
-      db: "not-configured",
+      db: "disabled",
       ingestQueue: "simulated",
       timestamp: new Date().toISOString()
     });

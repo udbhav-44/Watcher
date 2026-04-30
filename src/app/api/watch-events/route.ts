@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
-import { memoryStore } from "@/lib/data/memoryStore";
+import { isDbEnabled, prisma } from "@/lib/db";
+import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
+
+const titleIdSchema = z.string().regex(/^(tt\d+|tmdb-\d+)$/i, "Invalid title id");
 
 const eventSchema = z.object({
-  profileKey: z.string().min(2),
-  movieId: z.string().min(2),
+  titleId: titleIdSchema,
   secondsWatched: z.number().int().nonnegative(),
   progressPercent: z.number().min(0).max(100),
   completed: z.boolean().default(false)
@@ -14,7 +15,9 @@ const eventSchema = z.object({
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const profileKey = searchParams.get("profileKey") ?? "default";
+  const profileKey = searchParams.get("profileKey") ?? getProfileKeyFromCookie();
+  if (!isDbEnabled()) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+
   try {
     const events = await prisma.watchEvent.findMany({
       where: { profileKey },
@@ -23,11 +26,7 @@ export async function GET(request: Request): Promise<Response> {
     });
     return NextResponse.json({ events });
   } catch {
-    const events = memoryStore.watchEvents
-      .filter((item) => item.profileKey === profileKey)
-      .sort((a, b) => +new Date(b.watchedAt) - +new Date(a.watchedAt))
-      .slice(0, 40);
-    return NextResponse.json({ events });
+    return NextResponse.json({ error: "Unable to fetch watch events" }, { status: 503 });
   }
 }
 
@@ -38,12 +37,14 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  const profileKey = getProfileKeyFromCookie();
+
+  if (!isDbEnabled()) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+
   try {
-    const event = await prisma.watchEvent.create({ data: parsed.data });
+    const event = await prisma.watchEvent.create({ data: { ...parsed.data, profileKey } });
     return NextResponse.json({ event });
   } catch {
-    const event = { id: crypto.randomUUID(), ...parsed.data, watchedAt: new Date().toISOString() };
-    memoryStore.watchEvents.push(event);
-    return NextResponse.json({ event });
+    return NextResponse.json({ error: "Unable to record watch event" }, { status: 503 });
   }
 }

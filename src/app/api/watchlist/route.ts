@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
-import { memoryStore } from "@/lib/data/memoryStore";
+import { isDbEnabled, prisma } from "@/lib/db";
+import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
+
+const titleIdSchema = z.string().regex(/^(tt\d+|tmdb-\d+)$/i, "Invalid title id");
 
 const watchlistSchema = z.object({
-  profileKey: z.string().min(2),
-  movieId: z.string().min(2)
+  titleId: titleIdSchema
 });
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
-  const profileKey = searchParams.get("profileKey") ?? "default";
+  const profileKey = searchParams.get("profileKey") ?? getProfileKeyFromCookie();
+  if (!isDbEnabled()) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
 
   try {
     const watchlist = await prisma.watchlistItem.findMany({
       where: { profileKey },
-      include: { movie: true },
       orderBy: { createdAt: "desc" }
     });
     return NextResponse.json({ watchlist });
   } catch {
-    const watchlist = memoryStore.watchlist.filter((item) => item.profileKey === profileKey);
-    return NextResponse.json({ watchlist });
+    return NextResponse.json({ error: "Unable to fetch watchlist" }, { status: 503 });
   }
 }
 
@@ -33,25 +33,23 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  const profileKey = getProfileKeyFromCookie();
+
+  if (!isDbEnabled()) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+
   try {
     const item = await prisma.watchlistItem.upsert({
       where: {
-        movieId_profileKey: {
-          movieId: parsed.data.movieId,
-          profileKey: parsed.data.profileKey
+        titleId_profileKey: {
+          titleId: parsed.data.titleId,
+          profileKey
         }
       },
       update: {},
-      create: parsed.data
+      create: { titleId: parsed.data.titleId, profileKey }
     });
     return NextResponse.json({ item });
   } catch {
-    const existing = memoryStore.watchlist.find(
-      (entry) => entry.movieId === parsed.data.movieId && entry.profileKey === parsed.data.profileKey
-    );
-    if (existing) return NextResponse.json({ item: existing });
-    const item = { id: crypto.randomUUID(), ...parsed.data, createdAt: new Date().toISOString() };
-    memoryStore.watchlist.push(item);
-    return NextResponse.json({ item });
+    return NextResponse.json({ error: "Unable to update watchlist" }, { status: 503 });
   }
 }

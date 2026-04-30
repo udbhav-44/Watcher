@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 type Props = {
@@ -9,13 +9,14 @@ type Props = {
 
 export const PageTransition = ({ children }: Props): JSX.Element => {
   const pathname = usePathname();
+  const prefersReducedMotion = useReducedMotion();
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
+        initial={false}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -4 }}
         transition={{ duration: 0.25 }}
       >
         {children}

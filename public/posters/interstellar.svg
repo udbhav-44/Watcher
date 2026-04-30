@@ -1,0 +1,15 @@
+<svg width="700" height="1050" viewBox="0 0 700 1050" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="700" height="1050" fill="#070A12"/>
+  <rect x="35" y="35" width="630" height="980" rx="26" fill="url(#bg)"/>
+  <circle cx="350" cy="430" r="170" stroke="#D7E4FF" stroke-opacity="0.35" stroke-width="2"/>
+  <circle cx="350" cy="430" r="115" stroke="#5EE3FF" stroke-opacity="0.45" stroke-width="2"/>
+  <circle cx="350" cy="430" r="60" fill="#D9EDFF" fill-opacity="0.2"/>
+  <text x="80" y="820" fill="white" font-family="Arial, sans-serif" font-size="58" font-weight="700">INTERSTELLAR</text>
+  <text x="80" y="885" fill="#AAB1CB" font-family="Arial, sans-serif" font-size="30">Across space and time</text>
+  <defs>
+    <linearGradient id="bg" x1="350" y1="35" x2="350" y2="1015" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#182033"/>
+      <stop offset="1" stop-color="#241D3D"/>
+    </linearGradient>
+  </defs>
+</svg>

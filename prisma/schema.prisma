@@ -24,9 +24,6 @@ model Movie {
   updatedAt        DateTime       @updatedAt
   genres           MovieGenre[]
   cast             CastMember[]
-  watchEvents      WatchEvent[]
-  watchlistItems   WatchlistItem[]
-  reactions        Reaction[]
   featuredInRails  FeaturedRailMovie[]
 }
 
@@ -57,36 +54,34 @@ model CastMember {
 
 model WatchEvent {
   id             String   @id @default(cuid())
-  movieId         String
+  titleId         String
   profileKey      String
   secondsWatched  Int      @default(0)
   progressPercent Float    @default(0)
   completed       Boolean  @default(false)
   watchedAt       DateTime @default(now())
-  movie           Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
+  @@index([titleId])
   @@index([profileKey, watchedAt])
 }
 
 model WatchlistItem {
   id         String   @id @default(cuid())
-  movieId     String
+  titleId     String
   profileKey  String
   createdAt   DateTime @default(now())
-  movie       Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
-  @@unique([movieId, profileKey])
+  @@unique([titleId, profileKey])
 }
 
 model Reaction {
   id         String   @id @default(cuid())
-  movieId    String
+  titleId    String
   profileKey String
   type       ReactionType
   createdAt  DateTime @default(now())
-  movie      Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
-  @@unique([movieId, profileKey])
+  @@unique([titleId, profileKey])
 }
 
 enum ReactionType {
@@ -125,4 +120,12 @@ model AdminAudit {
   createdAt  DateTime @default(now())
 
   @@index([action, createdAt])
+}
+
+model UserProfile {
+  key        String   @id
+  displayName String
+  avatarColor String? @default("#5ee3ff")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

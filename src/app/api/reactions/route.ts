@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
-import { memoryStore } from "@/lib/data/memoryStore";
+import { isDbEnabled, prisma } from "@/lib/db";
+import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
+
+const titleIdSchema = z.string().regex(/^(tt\d+|tmdb-\d+)$/i, "Invalid title id");
 
 const reactionSchema = z.object({
-  profileKey: z.string().min(2),
-  movieId: z.string().min(2),
+  titleId: titleIdSchema,
   type: z.enum(["LIKE", "FIRE", "WOW"])
 });
 
@@ -17,28 +18,23 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  const profileKey = getProfileKeyFromCookie();
+
+  if (!isDbEnabled()) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+
   try {
     const reaction = await prisma.reaction.upsert({
       where: {
-        movieId_profileKey: {
-          movieId: parsed.data.movieId,
-          profileKey: parsed.data.profileKey
+        titleId_profileKey: {
+          titleId: parsed.data.titleId,
+          profileKey
         }
       },
       update: { type: parsed.data.type },
-      create: parsed.data
+      create: { titleId: parsed.data.titleId, profileKey, type: parsed.data.type }
     });
     return NextResponse.json({ reaction });
   } catch {
-    const existing = memoryStore.reactions.find(
-      (entry) => entry.movieId === parsed.data.movieId && entry.profileKey === parsed.data.profileKey
-    );
-    if (existing) {
-      existing.type = parsed.data.type;
-      return NextResponse.json({ reaction: existing });
-    }
-    const reaction = { id: crypto.randomUUID(), ...parsed.data, createdAt: new Date().toISOString() };
-    memoryStore.reactions.push(reaction);
-    return NextResponse.json({ reaction });
+    return NextResponse.json({ error: "Unable to save reaction" }, { status: 503 });
   }
 }

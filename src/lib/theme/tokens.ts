@@ -1,15 +1,17 @@
 export const tokens = {
   color: {
-    background: "#090b12",
-    surface: "#11131d",
-    elevated: "#181b2a",
-    textPrimary: "#f4f6ff",
-    textMuted: "#aab1cb",
-    accent: "#5ee3ff",
-    accentSecondary: "#7a6cff"
+    background: "#070707",
+    surface: "#101010",
+    elevated: "#181818",
+    textPrimary: "#f5f2ea",
+    textMuted: "#b7b0a3",
+    accent: "#f2c46d",
+    accentSecondary: "#8fb7ff",
+    success: "#8ccfb0",
+    warning: "#f2c46d"
   },
   radius: {
-    card: "1rem",
+    card: "0.5rem",
     pill: "999px"
   },
   blur: {
@@ -18,10 +20,10 @@ export const tokens = {
   motion: {
     quick: 0.18,
     base: 0.28,
-    cinematic: 0.55
+    slow: 0.55
   },
   shadow: {
-    card: "0 15px 40px rgba(5, 10, 40, 0.35)",
-    accent: "0 0 40px rgba(94, 227, 255, 0.24)"
+    card: "0 18px 42px rgba(0, 0, 0, 0.32)",
+    accent: "0 0 0 1px rgba(242, 196, 109, 0.22)"
   }
 } as const;

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db";
+import { isDbEnabled, prisma } from "@/lib/db";
 import { parseTitleId } from "@/lib/imdb/parseTitleId";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
+import { assertAdminAccess } from "@/lib/security/adminAuth";
 
 const ingestSchema = z.object({
   title: z.string().min(2),
@@ -12,6 +13,10 @@ const ingestSchema = z.object({
 });
 
 export async function POST(request: Request): Promise<Response> {
+  if (!assertAdminAccess(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const parsed = ingestSchema.safeParse(body);
   if (!parsed.success) {
@@ -21,6 +26,10 @@ export async function POST(request: Request): Promise<Response> {
   const titleId = parseTitleId(parsed.data.imdbUrlOrId);
   if (!titleId) {
     return NextResponse.json({ error: "Unable to parse title id" }, { status: 422 });
+  }
+
+  if (!isDbEnabled()) {
+    return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
   }
 
   try {
@@ -45,14 +54,6 @@ export async function POST(request: Request): Promise<Response> {
 
     return NextResponse.json({ movie });
   } catch {
-    return NextResponse.json({
-      simulated: true,
-      movie: {
-        titleId,
-        title: parsed.data.title,
-        synopsis: parsed.data.synopsis,
-        playableUrl: toPlayableUrl(titleId, parsed.data.imdbUrlOrId)
-      }
-    });
+    return NextResponse.json({ error: "Ingest failed" }, { status: 503 });
   }
 }
