@@ -328,7 +328,9 @@ All API routes live under `src/app/api/`. The personalization endpoints expect a
 
 ## Production deployment (self-hosted)
 
-The app is platform-agnostic but designed to run well on a single machine (laptop, mini-PC, or VPS) behind a reverse proxy. Below is the path used in practice.
+The app is platform-agnostic but designed to run well on a single machine (laptop, mini-PC, Raspberry Pi, or VPS) behind a reverse proxy. Below is the generic path; for a Raspberry Pi see the dedicated runbook:
+
+> **[Step-by-step Raspberry Pi deployment guide](docs/deployment-raspberry-pi.md)** — fresh Pi to live HTTPS site with backups, monitoring, and a tested update flow.
 
 ### One-time setup
 
