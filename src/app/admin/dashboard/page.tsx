@@ -10,15 +10,28 @@ export default function AdminDashboardPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold">Admin dashboard</h1>
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="space-y-2">
           <p className="text-sm text-white/60">Catalog ingest</p>
-          <p className="text-sm text-white/80">Use the secured `POST /api/admin/ingest` route with your internal admin key.</p>
+          <p className="text-sm text-white/80">
+            Use the secured `POST /api/admin/ingest` route with your internal
+            admin key.
+          </p>
         </Card>
         <Card className="space-y-2">
           <p className="text-sm text-white/60">Moderation</p>
-          <p className="text-sm text-white/80">Use the secured `POST /api/admin/moderation` route to activate/deactivate titles.</p>
+          <p className="text-sm text-white/80">
+            Use the secured `POST /api/admin/moderation` route to
+            activate/deactivate titles.
+          </p>
+        </Card>
+        <Card className="space-y-2">
+          <p className="text-sm text-white/60">Health</p>
+          <p className="text-sm text-white/80">
+            Hit `GET /api/system/readiness` for live DB + TMDB + provider
+            status.
+          </p>
         </Card>
       </div>
     </div>

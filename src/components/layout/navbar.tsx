@@ -6,14 +6,18 @@ import { usePathname } from "next/navigation";
 import { Menu, Search, Tv, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { clientEnv } from "@/lib/config/clientEnv";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/browse", label: "Browse" },
+  { href: "/browse", label: "Movies" },
+  { href: "/tv", label: "TV" },
+  { href: "/new", label: "New" },
+  { href: "/calendar", label: "Calendar" },
   { href: "/search", label: "Search" },
-  { href: "/me/watchlist", label: "Watchlist" }
+  { href: "/me/collections", label: "Collections" }
 ] as const;
 
 const adminLink = { href: "/admin/dashboard", label: "Admin" } as const;
@@ -55,6 +59,7 @@ export const Navbar = (): JSX.Element => {
               <Search className="mr-1 h-4 w-4" /> Find
             </Button>
           </Link>
+          <ProfileAvatar />
           <Button
             className="md:hidden"
             variant="ghost"

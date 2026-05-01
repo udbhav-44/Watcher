@@ -1,196 +1,36 @@
 import { Prisma } from "@prisma/client";
 
-import { env } from "@/lib/config/env";
 import { isDbEnabled, prisma } from "@/lib/db";
 import { mockMovies } from "@/lib/data/mockMovies";
+import {
+  applyDiscoveryFilters,
+  dedupeByTitleId,
+  hasTmdb,
+  movieGenreMap,
+  toMovieCardFromTmdb,
+  tmdbFetch,
+  type DiscoveryFilters,
+  type TmdbMovie
+} from "@/lib/data/tmdb";
 import { recommendMovies } from "@/lib/reco/engine";
-import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
 import type { FeaturedRailView, MovieCard } from "@/lib/types";
 
 const movieInclude = {
   genres: { include: { genre: true } }
 } satisfies Prisma.MovieInclude;
 
-const TMDB_API_BASE = "https://api.themoviedb.org/3";
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
-const hasTmdb = (): boolean => Boolean(env.TMDB_API_KEY);
+let tmdbCatalogCache: MovieCard[] = [];
+let tmdbRailsCache: FeaturedRailView[] = [];
+let tmdbNowPlayingCache: MovieCard[] = [];
 
-type TmdbMovie = {
-  id: number;
-  title: string;
-  overview: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  release_date?: string;
-  runtime?: number;
-  adult?: boolean;
-  genre_ids?: number[];
-  genres?: Array<{ id: number; name: string }>;
-  original_language?: string;
-  vote_average?: number;
-  videos?: {
-    results?: Array<{ key: string; site: string; type: string }>;
-  };
-  credits?: {
-    cast?: Array<{ name: string }>;
-  };
-};
+export type { DiscoveryFilters } from "@/lib/data/tmdb";
 
-export type DiscoveryFilters = {
-  query?: string;
-  genre?: string;
-  yearFrom?: number;
-  yearTo?: number;
-  language?: string;
-  sort?: "popularity" | "release_date" | "rating";
-};
-
-const genreMap: Record<number, string> = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  36: "History",
-  27: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romance",
-  878: "Sci-Fi",
-  53: "Thriller",
-  10752: "War",
-  37: "Western"
-};
-
-const tmdbSlug = (tmdbId: number): string => `tmdb-${tmdbId}`;
-
-const parseTmdbSlug = (titleId: string): number | null => {
-  if (!titleId.startsWith("tmdb-")) return null;
-  const value = Number(titleId.replace("tmdb-", ""));
-  return Number.isFinite(value) ? value : null;
-};
-
-const tmdbFetch = async <T>(
-  path: string,
-  params: Record<string, string> = {}
-): Promise<T | null> => {
-  if (!env.TMDB_API_KEY) return null;
-  try {
-    const url = new URL(`${TMDB_API_BASE}${path}`);
-    url.searchParams.set("api_key", env.TMDB_API_KEY);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) url.searchParams.set(key, value);
-    });
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 1800 },
-      signal: AbortSignal.timeout(8000)
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
-  } catch {
-    return null;
-  }
-};
-
-const toImageUrl = (
-  path: string | null,
-  size: "w500" | "w780" = "w500"
-): string | null => (path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null);
-
-const releaseYear = (releaseDate?: string): number | null => {
-  if (!releaseDate) return null;
-  const year = Number(releaseDate.slice(0, 4));
-  return Number.isFinite(year) ? year : null;
-};
-
-const genresFromTmdb = (movie: TmdbMovie): string[] => {
-  if (movie.genres?.length) return movie.genres.map((entry) => entry.name);
-  if (!movie.genre_ids?.length) return ["Movie"];
-  return movie.genre_ids.map((id) => genreMap[id] ?? "Movie");
-};
-
-const trailerUrlFromTmdb = (movie: TmdbMovie): string | null => {
-  const trailer = (movie.videos?.results ?? []).find(
-    (video) => video.site === "YouTube" && video.type === "Trailer"
-  );
-  return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
-};
-
-const castFromTmdb = (movie: TmdbMovie): string[] => {
-  return (movie.credits?.cast ?? []).slice(0, 6).map((entry) => entry.name);
-};
-
-const dedupeByTitleId = (movies: MovieCard[]): MovieCard[] => {
-  const seen = new Set<string>();
-  return movies.filter((movie) => {
-    if (seen.has(movie.titleId)) return false;
-    seen.add(movie.titleId);
-    return true;
-  });
-};
-
-const toMovieCardFromTmdb = (
-  movie: TmdbMovie,
-  imdbTitleId?: string | null
-): MovieCard => ({
-  id: `tmdb-${movie.id}`,
-  titleId: imdbTitleId ?? tmdbSlug(movie.id),
-  tmdbId: movie.id,
-  imdbTitleId: imdbTitleId ?? null,
-  title: movie.title,
-  synopsis: movie.overview,
-  posterUrl: toImageUrl(movie.poster_path, "w500"),
-  backdropUrl: toImageUrl(movie.backdrop_path, "w780"),
-  releaseYear: releaseYear(movie.release_date),
-  durationMinutes: movie.runtime ?? null,
-  voteAverage: movie.vote_average ?? null,
-  maturityRating: movie.adult ? "A" : "U/A 13+",
-  trailerUrl: trailerUrlFromTmdb(movie),
-  cast: castFromTmdb(movie),
-  playableUrl: imdbTitleId
-    ? toPlayableUrl(imdbTitleId, undefined, "playimdb")
-    : `${env.NEXT_PUBLIC_VIDKING_BASE}/embed/movie/${movie.id}`,
-  sourceProvider: imdbTitleId ? "playimdb" : "vidking",
-  genres: genresFromTmdb(movie)
-});
-
-const applyDiscoveryFilters = (
-  movies: MovieCard[],
-  filters: DiscoveryFilters
-): MovieCard[] => {
-  const query = (filters.query ?? "").trim().toLowerCase();
-  return movies
-    .filter((movie) => {
-      if (query) {
-        const haystack = `${movie.title} ${movie.synopsis ?? ""}`.toLowerCase();
-        if (!haystack.includes(query)) return false;
-      }
-      if (
-        filters.genre &&
-        filters.genre !== "all" &&
-        !movie.genres.includes(filters.genre)
-      )
-        return false;
-      if (filters.language && filters.language !== "all") {
-        // TMDB locale is not retained in current MovieCard, filter skipped for DB/mock paths.
-      }
-      if (filters.yearFrom && (movie.releaseYear ?? 0) < filters.yearFrom)
-        return false;
-      if (filters.yearTo && (movie.releaseYear ?? 9999) > filters.yearTo)
-        return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (filters.sort === "release_date")
-        return (b.releaseYear ?? 0) - (a.releaseYear ?? 0);
-      if (filters.sort === "rating")
-        return (b.voteAverage ?? 0) - (a.voteAverage ?? 0);
-      return a.title.localeCompare(b.title);
-    });
+const tmdbGenreIdFromName = (name: string | undefined): string | undefined => {
+  if (!name) return undefined;
+  const lower = name.toLowerCase();
+  return Object.entries(movieGenreMap).find(
+    ([, value]) => value.toLowerCase() === lower
+  )?.[0];
 };
 
 export const discoverMovies = async (
@@ -204,14 +44,11 @@ export const discoverMovies = async (
           ? "vote_average.desc"
           : "popularity.desc";
 
-    const tmdbGenreId = Object.entries(genreMap).find(
-      ([, name]) => name === filters.genre
-    )?.[0];
     const result = await tmdbFetch<{ results: TmdbMovie[] }>(
       "/discover/movie",
       {
         sort_by: sortBy,
-        with_genres: tmdbGenreId ?? "",
+        with_genres: tmdbGenreIdFromName(filters.genre) ?? "",
         "primary_release_date.gte": filters.yearFrom
           ? `${filters.yearFrom}-01-01`
           : "",
@@ -222,14 +59,16 @@ export const discoverMovies = async (
           filters.language && filters.language !== "all"
             ? filters.language
             : "",
-        query: filters.query ?? ""
+        "vote_count.gte": filters.sort === "rating" ? "200" : ""
       }
     );
 
     const mapped = (result?.results ?? []).map((movie) =>
       toMovieCardFromTmdb(movie)
     );
-    return applyDiscoveryFilters(mapped, filters).slice(0, 60);
+    if (mapped.length) {
+      return applyDiscoveryFilters(mapped, filters).slice(0, 60);
+    }
   }
 
   const fallback = await getMovies();
@@ -273,6 +112,7 @@ const toMovieCard = (
 ): MovieCard => ({
   id: movie.id,
   titleId: movie.titleId,
+  mediaType: "movie",
   imdbTitleId: movie.titleId.startsWith("tt") ? movie.titleId : null,
   title: movie.title,
   synopsis: movie.synopsis,
@@ -299,7 +139,12 @@ const fetchTmdbCatalogMovies = async (): Promise<MovieCard[]> => {
     ...(trending?.results ?? []),
     ...(popular?.results ?? [])
   ].map((movie) => toMovieCardFromTmdb(movie));
-  return dedupeByTitleId(merged).slice(0, 60);
+  const catalog = dedupeByTitleId(merged).slice(0, 60);
+  if (catalog.length) {
+    tmdbCatalogCache = catalog;
+    return catalog;
+  }
+  return tmdbCatalogCache;
 };
 
 export const getMovies = async (): Promise<MovieCard[]> => {
@@ -400,10 +245,16 @@ export const getMovieByTitleId = async (
   const localMovie = mockMovies.find((entry) => entry.titleId === titleId);
   if (localMovie) return localMovie;
 
-  const tmdbId = parseTmdbSlug(titleId);
-  if (tmdbId) {
-    const movie = await fetchTmdbMovieById(tmdbId);
-    if (movie) return movie;
+  if (titleId.startsWith("tmdb-tv-")) {
+    return null;
+  }
+
+  if (titleId.startsWith("tmdb-")) {
+    const tmdbId = Number(titleId.replace("tmdb-", ""));
+    if (Number.isFinite(tmdbId)) {
+      const movie = await fetchTmdbMovieById(tmdbId);
+      if (movie) return movie;
+    }
   }
 
   if (titleId.startsWith("tt")) {
@@ -412,6 +263,32 @@ export const getMovieByTitleId = async (
   }
 
   return null;
+};
+
+export const getSimilarMovies = async (
+  tmdbId: number
+): Promise<MovieCard[]> => {
+  const result = await tmdbFetch<{ results: TmdbMovie[] }>(
+    `/movie/${tmdbId}/similar`
+  );
+  return (result?.results ?? [])
+    .slice(0, 18)
+    .map((movie) => toMovieCardFromTmdb(movie));
+};
+
+export const getNowPlayingMovies = async (): Promise<MovieCard[]> => {
+  if (!hasTmdb()) return tmdbNowPlayingCache;
+  const result = await tmdbFetch<{ results: TmdbMovie[] }>(
+    "/movie/now_playing"
+  );
+  const mapped = (result?.results ?? [])
+    .slice(0, 24)
+    .map((movie) => toMovieCardFromTmdb(movie));
+  if (mapped.length) {
+    tmdbNowPlayingCache = mapped;
+    return mapped;
+  }
+  return tmdbNowPlayingCache;
 };
 
 export const getFeaturedRails = async (): Promise<FeaturedRailView[]> => {
@@ -425,21 +302,21 @@ export const getFeaturedRails = async (): Promise<FeaturedRailView[]> => {
     const tmdbRails: FeaturedRailView[] = [
       {
         slug: "trending-now",
-        label: "Trending Now",
+        label: "Trending now",
         movies: (trending?.results ?? [])
           .slice(0, 18)
           .map((movie) => toMovieCardFromTmdb(movie))
       },
       {
         slug: "popular-picks",
-        label: "Popular Picks",
+        label: "Popular picks",
         movies: (popular?.results ?? [])
           .slice(0, 18)
           .map((movie) => toMovieCardFromTmdb(movie))
       },
       {
         slug: "top-rated",
-        label: "Top Rated",
+        label: "Top rated",
         movies: (topRated?.results ?? [])
           .slice(0, 18)
           .map((movie) => toMovieCardFromTmdb(movie))
@@ -448,8 +325,10 @@ export const getFeaturedRails = async (): Promise<FeaturedRailView[]> => {
 
     const hasAnyMovie = tmdbRails.some((rail) => rail.movies.length > 0);
     if (hasAnyMovie) {
+      tmdbRailsCache = tmdbRails;
       return tmdbRails;
     }
+    if (tmdbRailsCache.length) return tmdbRailsCache;
   }
 
   const movies = await getMovies();
@@ -459,13 +338,13 @@ export const getFeaturedRails = async (): Promise<FeaturedRailView[]> => {
   return [
     {
       slug: "trending-now",
-      label: "Trending Now",
+      label: "Trending now",
       movies: movies.slice(0, 12)
     },
-    { slug: "for-you", label: "For You", movies: recommendations.slice(0, 12) },
+    { slug: "for-you", label: "For you", movies: recommendations.slice(0, 12) },
     {
       slug: "new-arrivals",
-      label: "New Arrivals",
+      label: "New arrivals",
       movies: [...movies]
         .sort((a, b) => (b.releaseYear ?? 0) - (a.releaseYear ?? 0))
         .slice(0, 12)

@@ -2,12 +2,28 @@
 
 import Hls from "hls.js";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, PictureInPicture2 } from "lucide-react";
+
+import { useToast } from "@/components/ui/toast";
 
 type Props = {
   src: string;
   poster?: string | null;
   titleId?: string;
+};
+
+const VOLUME_KEY = "campusstream:volume";
+
+const formatTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(secs).padStart(2, "0")}`;
 };
 
 export const StreamingPlayer = ({
@@ -22,13 +38,41 @@ export const StreamingPlayer = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [iframeLoading, setIframeLoading] = useState(!isDirectMedia);
   const [subtitleUrl, setSubtitleUrl] = useState("");
+  const [pipSupported, setPipSupported] = useState(false);
+  const [pipActive, setPipActive] = useState(false);
   const trackId = useMemo(() => `track-${titleId ?? "default"}`, [titleId]);
+  const toast = useToast();
+
+  useEffect(() => {
+    setPipSupported(
+      typeof document !== "undefined" &&
+        Boolean((document as Document).pictureInPictureEnabled)
+    );
+  }, []);
 
   useEffect(() => {
     if (!isDirectMedia) return;
 
     const video = videoRef.current;
     if (!video) return;
+
+    const storedVolume = window.localStorage.getItem(VOLUME_KEY);
+    if (storedVolume) {
+      const parsed = Number(storedVolume);
+      if (Number.isFinite(parsed)) {
+        video.volume = Math.min(1, Math.max(0, parsed));
+      }
+    }
+
+    const onVolumeChange = (): void => {
+      window.localStorage.setItem(VOLUME_KEY, String(video.volume));
+    };
+    video.addEventListener("volumechange", onVolumeChange);
+
+    const onEnterPip = (): void => setPipActive(true);
+    const onLeavePip = (): void => setPipActive(false);
+    video.addEventListener("enterpictureinpicture", onEnterPip);
+    video.addEventListener("leavepictureinpicture", onLeavePip);
 
     const hydrateResumePoint = async (): Promise<void> => {
       if (!titleId) return;
@@ -42,6 +86,7 @@ export const StreamingPlayer = ({
       );
       if (entry && entry.secondsWatched > 10) {
         video.currentTime = entry.secondsWatched;
+        toast.info(`Resumed at ${formatTime(entry.secondsWatched)}`);
       }
     };
 
@@ -54,7 +99,12 @@ export const StreamingPlayer = ({
       hls.on(Hls.Events.ERROR, () =>
         setErrorMessage("Playback stream error. Try another server.")
       );
-      return () => hls.destroy();
+      return () => {
+        video.removeEventListener("volumechange", onVolumeChange);
+        video.removeEventListener("enterpictureinpicture", onEnterPip);
+        video.removeEventListener("leavepictureinpicture", onLeavePip);
+        hls.destroy();
+      };
     }
 
     video.src = src;
@@ -85,12 +135,15 @@ export const StreamingPlayer = ({
 
     return () => {
       video.removeEventListener("error", onError);
+      video.removeEventListener("volumechange", onVolumeChange);
+      video.removeEventListener("enterpictureinpicture", onEnterPip);
+      video.removeEventListener("leavepictureinpicture", onLeavePip);
       if (watchTickerRef.current) {
         window.clearInterval(watchTickerRef.current);
         watchTickerRef.current = null;
       }
     };
-  }, [isDirectMedia, titleId, src]);
+  }, [isDirectMedia, titleId, src, toast]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -114,6 +167,20 @@ export const StreamingPlayer = ({
     }, 2500);
     return () => window.clearTimeout(timer);
   }, [isDirectMedia, src]);
+
+  const togglePip = async (): Promise<void> => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (pipActive) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch {
+      toast.error("Picture-in-picture not available right now");
+    }
+  };
 
   if (!isDirectMedia) {
     return (
@@ -191,6 +258,16 @@ export const StreamingPlayer = ({
             className="h-8 flex-1 rounded-md border border-white/15 bg-black/30 px-2 text-xs"
           />
         </label>
+        {pipSupported && (
+          <button
+            type="button"
+            onClick={togglePip}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-white/75 transition hover:bg-white/[0.08]"
+          >
+            <PictureInPicture2 className="h-3.5 w-3.5" />
+            {pipActive ? "Exit PiP" : "Picture in picture"}
+          </button>
+        )}
       </div>
       {errorMessage && (
         <p className="text-xs text-amber-200/90">{errorMessage}</p>

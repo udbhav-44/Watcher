@@ -1,13 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ExternalLink, PlayCircle } from "lucide-react";
+import { notFound, redirect } from "next/navigation";
+import { Play } from "lucide-react";
 
 import { MovieRail } from "@/components/movies/movie-rail";
+import { RatingWidget } from "@/components/movies/rating-widget";
 import { TitleActions } from "@/components/movies/title-actions";
+import { TrailerModal } from "@/components/movies/trailer-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getFeaturedRails, getMovieByTitleId } from "@/lib/data/movies";
+import { isTvTitleId } from "@/lib/catalog/titleId";
+import { getMovieByTitleId, getSimilarMovies } from "@/lib/data/movies";
 
 type Props = {
   params: { ttid: string };
@@ -16,11 +19,15 @@ type Props = {
 export default async function TitleDetailPage({
   params
 }: Props): Promise<JSX.Element> {
+  if (isTvTitleId(params.ttid)) {
+    redirect(`/tv/${params.ttid}`);
+  }
+
   const movie = await getMovieByTitleId(params.ttid);
   if (!movie) return notFound();
 
-  const rails = await getFeaturedRails();
   const heroArtwork = movie.backdropUrl ?? movie.posterUrl;
+  const similar = movie.tmdbId ? await getSimilarMovies(movie.tmdbId) : [];
 
   return (
     <div className="space-y-8">
@@ -39,7 +46,7 @@ export default async function TitleDetailPage({
         )}
         <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-[#070707]/88 to-[#070707]/36" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-transparent to-transparent" />
-        <div className="relative flex min-h-[380px] items-end p-6 md:min-h-[520px] md:p-10">
+        <div className="relative flex min-h-[420px] items-end p-6 md:min-h-[560px] md:p-10">
           <div className="max-w-3xl space-y-4">
             <p className="text-sm tracking-[0.22em] text-[#f2c46d] uppercase">
               {movie.genres.join(" • ")}
@@ -61,6 +68,11 @@ export default async function TitleDetailPage({
                   {movie.durationMinutes} min
                 </span>
               )}
+              {movie.voteAverage != null && (
+                <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1">
+                  ★ {movie.voteAverage.toFixed(1)}
+                </span>
+              )}
             </div>
             <p className="max-w-2xl text-sm text-white/80 md:text-base">
               {movie.synopsis}
@@ -68,43 +80,23 @@ export default async function TitleDetailPage({
             <div className="flex flex-wrap gap-3">
               <Link href={`/watch/${movie.titleId}`}>
                 <Button size="lg">
-                  <PlayCircle className="mr-2 h-5 w-5" />
+                  <Play className="mr-2 h-5 w-5 fill-current" />
                   Play
                 </Button>
               </Link>
               {movie.trailerUrl && (
-                <a href={movie.trailerUrl} target="_blank" rel="noreferrer">
-                  <Button variant="outline" size="lg">
-                    Trailer <ExternalLink className="ml-2 h-4 w-4" />
-                  </Button>
-                </a>
+                <TrailerModal trailerUrl={movie.trailerUrl} title={movie.title} />
               )}
-              <TitleActions titleId={movie.titleId} />
+              <TitleActions
+                titleId={movie.titleId}
+                title={movie.title}
+                mediaType="movie"
+              />
             </div>
+            <RatingWidget titleId={movie.titleId} mediaType="movie" />
           </div>
         </div>
       </section>
-
-      <Card className="sticky top-20 z-20">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs tracking-[0.16em] text-[#f2c46d] uppercase">
-              Selected title
-            </p>
-            <p className="text-lg font-semibold">{movie.title}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/watch/${movie.titleId}`}>
-              <Button size="sm">Resume</Button>
-            </Link>
-            <Link href="/browse">
-              <Button variant="ghost" size="sm">
-                More like this
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-2">
@@ -112,6 +104,12 @@ export default async function TitleDetailPage({
             Overview
           </p>
           <p className="text-sm leading-7 text-white/78">{movie.synopsis}</p>
+          {movie.director && (
+            <p className="mt-3 text-sm text-white/60">
+              Director:{" "}
+              <span className="text-white/85">{movie.director}</span>
+            </p>
+          )}
         </Card>
         <Card>
           <p className="mb-2 text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
@@ -132,41 +130,49 @@ export default async function TitleDetailPage({
         </Card>
       </div>
 
-      {movie.cast?.length ? (
+      {movie.castDetails && movie.castDetails.length > 0 && (
         <Card>
           <p className="mb-3 text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
             Cast
           </p>
-          <div className="flex flex-wrap gap-2">
-            {movie.cast.map((name) => (
-              <span
-                key={name}
-                className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-sm text-white/80"
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
+            {movie.castDetails.slice(0, 12).map((member) => (
+              <div
+                key={`${member.name}-${member.character ?? ""}`}
+                className="space-y-1 text-center"
               >
-                {name}
-              </span>
+                <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-full bg-white/5">
+                  {member.profileUrl ? (
+                    <Image
+                      src={member.profileUrl}
+                      alt={member.name}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm text-white/40">
+                      {member.name.slice(0, 1)}
+                    </div>
+                  )}
+                </div>
+                <p className="line-clamp-1 text-sm font-medium">
+                  {member.name}
+                </p>
+                {member.character && (
+                  <p className="line-clamp-1 text-xs text-white/56">
+                    {member.character}
+                  </p>
+                )}
+              </div>
             ))}
           </div>
         </Card>
-      ) : null}
+      )}
 
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-white/72">
-            Find similar titles in the library.
-          </p>
-          <Link
-            href="/browse"
-            className="text-sm text-[#f2c46d] hover:underline"
-          >
-            Browse
-          </Link>
-        </div>
-      </Card>
-      <MovieRail
-        title={rails[1]?.label ?? "More like this"}
-        movies={rails[1]?.movies ?? []}
-      />
+      {similar.length > 0 && (
+        <MovieRail title="More like this" movies={similar} />
+      )}
     </div>
   );
 }

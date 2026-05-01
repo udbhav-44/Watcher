@@ -3,6 +3,7 @@
 :root {
   color-scheme: dark;
   --bg: #070707;
+  --bg-gradient: linear-gradient(180deg, #0c0c0d 0%, #070707 46%, #050505 100%);
   --surface: #101010;
   --surface-elevated: #181818;
   --surface-soft: #22211f;
@@ -11,11 +12,13 @@
   --accent: #f2c46d;
   --accent-2: #8fb7ff;
   --border-soft: rgba(245, 242, 234, 0.12);
+  --rail-gap: 0.75rem;
+  --card-pad: 1rem;
 }
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0c0c0d 0%, #070707 46%, #050505 100%);
+  background: var(--bg-gradient);
   color: var(--text-primary);
   font-feature-settings:
     "ss01" 1,

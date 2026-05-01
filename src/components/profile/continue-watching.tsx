@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { watchHrefFor } from "@/lib/catalog/titleId";
+
 type WatchEvent = {
   id: string;
   titleId: string;
@@ -58,7 +60,7 @@ export const ContinueWatching = (): JSX.Element | null => {
         {events.map((event) => (
           <Link
             key={event.id}
-            href={`/watch/${event.titleId}`}
+            href={watchHrefFor(event.titleId)}
             className="surface-panel min-w-[180px] rounded-lg p-3 text-sm transition hover:bg-white/[0.06]"
           >
             <p>

@@ -56,22 +56,66 @@ model WatchEvent {
   id             String   @id @default(cuid())
   titleId         String
   profileKey      String
+  mediaType       String   @default("movie")
+  season          Int?
+  episode         Int?
   secondsWatched  Int      @default(0)
   progressPercent Float    @default(0)
   completed       Boolean  @default(false)
   watchedAt       DateTime @default(now())
 
   @@index([titleId])
+  @@index([profileKey, titleId])
   @@index([profileKey, watchedAt])
 }
 
-model WatchlistItem {
+model Collection {
+  id         String           @id @default(cuid())
+  profileKey String
+  name       String
+  slug       String
+  isDefault  Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  items      CollectionItem[]
+
+  @@unique([profileKey, slug])
+  @@index([profileKey])
+}
+
+model CollectionItem {
+  id           String     @id @default(cuid())
+  collectionId String
+  titleId      String
+  mediaType    String     @default("movie")
+  addedAt      DateTime   @default(now())
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, titleId])
+  @@index([titleId])
+}
+
+model Rating {
   id         String   @id @default(cuid())
-  titleId     String
-  profileKey  String
-  createdAt   DateTime @default(now())
+  profileKey String
+  titleId    String
+  mediaType  String   @default("movie")
+  score      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([titleId, profileKey])
+  @@index([profileKey, score])
+  @@index([titleId])
+}
+
+model SearchHistoryEntry {
+  id         String   @id @default(cuid())
+  profileKey String
+  query      String
+  createdAt  DateTime @default(now())
+
+  @@index([profileKey, createdAt])
 }
 
 model Reaction {
@@ -128,4 +172,47 @@ model UserProfile {
   avatarColor String? @default("#5ee3ff")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model UserPreferences {
+  profileKey       String   @id
+  theme            String   @default("dark")
+  density          String   @default("comfortable")
+  reducedMotion    Boolean  @default(false)
+  defaultProvider  String   @default("vidking")
+  subtitleLanguage String   @default("en")
+  voiceSearch      Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now())
+}
+
+model SkipMarker {
+  id          String   @id @default(cuid())
+  profileKey  String
+  titleId     String
+  season      Int?
+  episode     Int?
+  kind        String   @default("intro")
+  endSeconds  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([profileKey, titleId, season, episode, kind])
+  @@index([profileKey, titleId])
+}
+
+model FeaturedTheme {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  coverUrl    String?
+  accent      String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  items       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }

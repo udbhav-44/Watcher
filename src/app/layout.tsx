@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
 import { Navbar } from "@/components/layout/navbar";
 import { PageTransition } from "@/components/layout/page-transition";
+import { MiniPlayerHost } from "@/components/player/mini-player";
+import { ToastProvider } from "@/components/ui/toast";
 
 import "./globals.css";
 
@@ -10,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CampusStream",
-  description: "Watch, search, and save titles."
+  description: "Watch, search, save, and rate titles."
 };
 
 export default function RootLayout({
@@ -25,10 +28,14 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <Navbar />
-        <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-6">
-          <PageTransition>{children}</PageTransition>
-        </main>
+        <ToastProvider>
+          <KeyboardShortcuts />
+          <Navbar />
+          <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-6">
+            <PageTransition>{children}</PageTransition>
+          </main>
+          <MiniPlayerHost />
+        </ToastProvider>
       </body>
     </html>
   );

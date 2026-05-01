@@ -1,4 +1,5 @@
 import { env } from "@/lib/config/env";
+import { isTvTitleId } from "@/lib/catalog/titleId";
 
 const knownTmdbByImdb: Record<string, string> = {
   tt1375666: "27205",
@@ -9,10 +10,24 @@ const knownTmdbByImdb: Record<string, string> = {
 const buildVidkingMovieUrl = (tmdbId: string): string =>
   `${env.NEXT_PUBLIC_VIDKING_BASE}/embed/movie/${tmdbId}`;
 
+const buildVidkingTvUrl = (
+  tmdbId: string,
+  season: number,
+  episode: number
+): string =>
+  `${env.NEXT_PUBLIC_VIDKING_BASE}/embed/tv/${tmdbId}/${season}/${episode}`;
+
 const parseTmdbSlug = (identifier: string): string | null => {
-  if (!identifier.startsWith("tmdb-")) return null;
-  const value = identifier.replace("tmdb-", "");
-  return /^\d+$/.test(value) ? value : null;
+  const lower = identifier.toLowerCase();
+  if (lower.startsWith("tmdb-tv-")) {
+    const value = lower.replace("tmdb-tv-", "");
+    return /^\d+$/.test(value) ? value : null;
+  }
+  if (lower.startsWith("tmdb-")) {
+    const value = lower.replace("tmdb-", "");
+    return /^\d+$/.test(value) ? value : null;
+  }
+  return null;
 };
 
 const fetchTmdbMovieIdByImdb = async (
@@ -29,8 +44,9 @@ const fetchTmdbMovieIdByImdb = async (
 
     const data = (await response.json()) as {
       movie_results?: Array<{ id: number }>;
+      tv_results?: Array<{ id: number }>;
     };
-    const id = data.movie_results?.[0]?.id;
+    const id = data.movie_results?.[0]?.id ?? data.tv_results?.[0]?.id;
     return typeof id === "number" ? String(id) : null;
   } catch {
     return null;
@@ -38,19 +54,38 @@ const fetchTmdbMovieIdByImdb = async (
 };
 
 export const resolveVidkingUrlFromIdentifier = async (
-  identifier: string
+  identifier: string,
+  options: { season?: number; episode?: number } = {}
 ): Promise<string | null> => {
-  const fromTmdbSlug = parseTmdbSlug(identifier);
-  if (fromTmdbSlug) return buildVidkingMovieUrl(fromTmdbSlug);
+  const tv = isTvTitleId(identifier);
+  const season = options.season ?? 1;
+  const episode = options.episode ?? 1;
 
-  if (/^\d+$/.test(identifier)) return buildVidkingMovieUrl(identifier);
+  const fromTmdbSlug = parseTmdbSlug(identifier);
+  if (fromTmdbSlug) {
+    return tv
+      ? buildVidkingTvUrl(fromTmdbSlug, season, episode)
+      : buildVidkingMovieUrl(fromTmdbSlug);
+  }
+
+  if (/^\d+$/.test(identifier)) {
+    return tv
+      ? buildVidkingTvUrl(identifier, season, episode)
+      : buildVidkingMovieUrl(identifier);
+  }
 
   const cleanTitleId = identifier.toLowerCase();
   const mapped = knownTmdbByImdb[cleanTitleId];
-  if (mapped) return buildVidkingMovieUrl(mapped);
+  if (mapped) {
+    return tv
+      ? buildVidkingTvUrl(mapped, season, episode)
+      : buildVidkingMovieUrl(mapped);
+  }
 
   const tmdbId = await fetchTmdbMovieIdByImdb(cleanTitleId);
   if (!tmdbId) return null;
 
-  return buildVidkingMovieUrl(tmdbId);
+  return tv
+    ? buildVidkingTvUrl(tmdbId, season, episode)
+    : buildVidkingMovieUrl(tmdbId);
 };

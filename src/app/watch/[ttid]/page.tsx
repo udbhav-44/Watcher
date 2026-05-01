@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
+import { ActivePlayerBinder } from "@/components/player/active-player-binder";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
 import { Card } from "@/components/ui/card";
+import { isTvTitleId } from "@/lib/catalog/titleId";
 import { getFeaturedRails, getMovieByTitleId } from "@/lib/data/movies";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
 import { resolveVidkingUrlFromIdentifier } from "@/lib/vidking/resolveVidkingUrl";
@@ -14,6 +16,10 @@ type Props = {
 export default async function WatchPage({
   params
 }: Props): Promise<JSX.Element> {
+  if (isTvTitleId(params.ttid)) {
+    redirect(`/tv/${params.ttid}/watch`);
+  }
+
   const movie = await getMovieByTitleId(params.ttid);
   if (!movie) return notFound();
   const rails = await getFeaturedRails();
@@ -29,12 +35,20 @@ export default async function WatchPage({
 
   return (
     <div className="space-y-4">
+      <ActivePlayerBinder
+        titleId={movie.titleId}
+        title={movie.title}
+        src={vidkingUrl ?? playImdbUrl}
+        poster={movie.backdropUrl ?? null}
+        mediaType="movie"
+      />
       <h1 className="text-3xl font-semibold">{movie.title}</h1>
       <ServerTogglePlayer
         titleId={movie.titleId}
         poster={movie.backdropUrl}
         playImdbUrl={playImdbUrl}
         vidkingUrl={vidkingUrl}
+        mediaType="movie"
       />
       <Card>
         <p className="text-sm text-white/68">

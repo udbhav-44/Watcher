@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Play } from "lucide-react";
 
+import { detailHrefFor } from "@/lib/catalog/titleId";
 import type { MovieCard as MovieCardType } from "@/lib/types";
 
 type Props = {
@@ -21,7 +22,7 @@ export const MovieCard = ({ movie }: Props): JSX.Element => {
       className="group w-[168px] shrink-0 sm:w-[184px] lg:w-[196px]"
     >
       <Link
-        href={`/title/${movie.titleId}`}
+        href={detailHrefFor(movie.titleId)}
         className="block overflow-hidden rounded-lg border border-white/10 bg-[#121212] shadow-[0_16px_34px_rgba(0,0,0,0.28)] transition outline-none hover:border-white/20 focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70"
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#1a1a1a]">
