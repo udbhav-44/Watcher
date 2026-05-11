@@ -1,17 +1,67 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens — single source of truth for color, radius, motion,
+ * elevation. Tailwind v4 generates utilities from every --color-*,
+ * --radius-*, --shadow-*, --ease-* entry below (e.g. bg-surface, text-fg,
+ * rounded-lg, shadow-card, ease-out-soft).
+ *
+ * When you need a color that isn't here, add a token rather than
+ * inlining a hex. The cinema/light themes (Phase 0+) will swap these
+ * via a [data-theme] selector on <html>.
+ */
+@theme {
+  --color-base: #070707;
+  --color-base-soft: #0c0c0d;
+  --color-surface: #101010;
+  --color-surface-2: #181818;
+  --color-surface-3: #22211f;
+  --color-overlay: rgb(13 13 13 / 0.95);
+
+  --color-fg: #f5f2ea;
+  --color-fg-muted: rgb(245 242 234 / 0.72);
+  --color-fg-faint: rgb(245 242 234 / 0.48);
+  --color-fg-on-accent: #1a140a;
+
+  --color-accent: #f2c46d;
+  --color-accent-hover: #ffd47f;
+  --color-accent-soft: rgb(242 196 109 / 0.16);
+
+  --color-border: rgb(245 242 234 / 0.12);
+  --color-border-strong: rgb(245 242 234 / 0.24);
+
+  --color-info: #8fb7ff;
+  --color-success: #8ccfb0;
+  --color-warning: #f2c46d;
+  --color-danger: #f08a8a;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  --shadow-card: 0 16px 34px rgb(0 0 0 / 0.28);
+  --shadow-lift: 0 24px 52px rgb(0 0 0 / 0.42);
+
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 :root {
   color-scheme: dark;
-  --bg: #070707;
+  /* Legacy aliases kept so any in-flight component referencing the old
+   * CSS variable names continues to work during the phased migration. */
+  --bg: var(--color-base);
   --bg-gradient: linear-gradient(180deg, #0c0c0d 0%, #070707 46%, #050505 100%);
-  --surface: #101010;
-  --surface-elevated: #181818;
-  --surface-soft: #22211f;
-  --text-primary: #f5f2ea;
-  --text-muted: #b7b0a3;
-  --accent: #f2c46d;
-  --accent-2: #8fb7ff;
-  --border-soft: rgba(245, 242, 234, 0.12);
+  --surface: var(--color-surface);
+  --surface-elevated: var(--color-surface-2);
+  --surface-soft: var(--color-surface-3);
+  --text-primary: var(--color-fg);
+  --text-muted: var(--color-fg-muted);
+  --accent: var(--color-accent);
+  --accent-2: var(--color-info);
+  --border-soft: var(--color-border);
   --rail-gap: 0.75rem;
   --card-pad: 1rem;
 }
@@ -19,7 +69,7 @@
 body {
   min-height: 100vh;
   background: var(--bg-gradient);
-  color: var(--text-primary);
+  color: var(--color-fg);
   font-feature-settings:
     "ss01" 1,
     "ss02" 1;
@@ -34,31 +84,60 @@ body::before {
   content: "";
   opacity: 0.18;
   background-image: linear-gradient(
-    rgba(255, 255, 255, 0.04) 1px,
+    rgb(255 255 255 / 0.04) 1px,
     transparent 1px
   );
   background-size: 100% 4px;
 }
 
-.glass-panel {
-  background: color-mix(in oklab, var(--surface) 88%, transparent);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border-soft);
+@layer components {
+  .glass-panel {
+    background: color-mix(in oklab, var(--color-surface) 88%, transparent);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--color-border);
+  }
+  .surface-panel {
+    background: color-mix(in oklab, var(--color-surface-2) 94%, transparent);
+    border: 1px solid var(--color-border);
+  }
 }
 
-.surface-panel {
-  background: color-mix(in oklab, var(--surface-elevated) 94%, transparent);
-  border: 1px solid var(--border-soft);
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .focus-ring {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(242 196 109 / 0.7);
+  }
+  /* Hide scrollbars on horizontal rails without losing scroll affordance */
+  .rail-scroll {
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1rem;
+  }
+  .rail-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-scroll > * {
+    scroll-snap-align: start;
+  }
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--accent) 45%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 45%, transparent);
   color: white;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(242, 196, 109, 0.55) rgba(255, 255, 255, 0.06);
+  scrollbar-color: rgb(242 196 109 / 0.55) rgb(255 255 255 / 0.06);
 }
 
 h1,
@@ -67,7 +146,31 @@ h3 {
   letter-spacing: 0;
 }
 
-.focus-ring {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(242, 196, 109, 0.7);
+/* Shared keyframes — consumed via Tailwind's animate-[…] arbitrary syntax. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

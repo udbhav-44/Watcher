@@ -116,7 +116,7 @@ export const ToastProvider = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 12, scale: 0.96 }}
                 transition={{ duration: 0.18 }}
-                className={`pointer-events-auto flex max-w-sm items-center gap-3 rounded-full border bg-[#0d0d0d]/95 px-4 py-2 text-sm text-white shadow-lg ${styles.ring}`}
+                className={`pointer-events-auto flex max-w-sm items-center gap-3 rounded-full border bg-overlay px-4 py-2 text-sm text-fg backdrop-blur shadow-lift ${styles.ring}`}
                 role="status"
               >
                 {styles.icon}
@@ -124,7 +124,7 @@ export const ToastProvider = ({
                 <button
                   type="button"
                   onClick={() => dismiss(toast.id)}
-                  className="rounded-full p-1 text-white/56 transition hover:bg-white/10 hover:text-white"
+                  className="rounded-full p-1 text-fg-faint transition hover:bg-fg/10 hover:text-fg"
                   aria-label="Dismiss notification"
                 >
                   <X className="h-3.5 w-3.5" />
