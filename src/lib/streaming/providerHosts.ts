@@ -1,4 +1,12 @@
-const hostRules = ["playimdb.com", "vidking.net", "streamimdb.ru"] as const;
+const hostRules = [
+  "playimdb.com",
+  "vidking.net",
+  "streamimdb.ru",
+  "vidsrc.cc",
+  "vidsrc.to",
+  "embed.su",
+  "multiembed.mov"
+] as const;
 
 export const isAllowedProviderHost = (hostname: string): boolean => {
   const host = hostname.toLowerCase();

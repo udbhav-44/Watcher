@@ -12,7 +12,7 @@ import {
   getSimilarMovies
 } from "@/lib/data/movies";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
-import { resolveVidkingUrlFromIdentifier } from "@/lib/vidking/resolveVidkingUrl";
+import { resolveProviderUrlsFromIdentifier } from "@/lib/streaming/resolveProviders";
 
 type Props = {
   params: { ttid: string };
@@ -28,9 +28,10 @@ export default async function WatchPage({
   const movie = await getMovieByTitleId(params.ttid);
   if (!movie) return notFound();
 
-  const [rails, similar] = await Promise.all([
+  const [rails, similar, providers] = await Promise.all([
     getFeaturedRails(),
-    movie.tmdbId ? getSimilarMovies(movie.tmdbId) : Promise.resolve([])
+    movie.tmdbId ? getSimilarMovies(movie.tmdbId) : Promise.resolve([]),
+    resolveProviderUrlsFromIdentifier(movie.titleId).catch(() => [])
   ]);
   const upNext = rails
     .flatMap((rail) => rail.movies)
@@ -38,9 +39,7 @@ export default async function WatchPage({
   const playImdbUrl = movie.imdbTitleId
     ? toPlayableUrl(movie.imdbTitleId, undefined, "playimdb")
     : toPlayableUrl(movie.titleId, undefined, "playimdb");
-  const vidkingUrl = await resolveVidkingUrlFromIdentifier(movie.titleId).catch(
-    () => null
-  );
+  const primaryEmbed = providers[0]?.url ?? playImdbUrl;
 
   const heroMeta = [
     movie.releaseYear,
@@ -55,7 +54,7 @@ export default async function WatchPage({
       <ActivePlayerBinder
         titleId={movie.titleId}
         title={movie.title}
-        src={vidkingUrl ?? playImdbUrl}
+        src={primaryEmbed}
         poster={movie.backdropUrl ?? null}
         mediaType="movie"
       />
@@ -73,8 +72,9 @@ export default async function WatchPage({
           <ServerTogglePlayer
             titleId={movie.titleId}
             poster={movie.backdropUrl}
-            playImdbUrl={playImdbUrl}
-            vidkingUrl={vidkingUrl}
+            providers={providers}
+            externalUrl={playImdbUrl}
+            externalLabel="Open on PlayIMDb"
             mediaType="movie"
           />
           <div className="space-y-2">

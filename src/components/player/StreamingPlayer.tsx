@@ -186,30 +186,22 @@ export const StreamingPlayer = ({
     return (
       <div className="space-y-3">
         {iframeLoading && (
-          <p className="text-xs text-white/70">Loading player...</p>
+          <p className="text-xs text-fg-muted">Loading player...</p>
         )}
         <iframe
           src={src}
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           allowFullScreen
           referrerPolicy="origin"
-          className="aspect-video w-full rounded-lg border border-white/10 bg-black"
+          className="aspect-video w-full rounded-lg border border-border bg-black"
           title="Campus stream player"
           onLoad={() => {
             setIframeLoading(false);
             setErrorMessage(null);
           }}
         />
-        <a
-          href={src}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
-        >
-          Open in new tab <ExternalLink className="h-4 w-4" />
-        </a>
         {errorMessage && (
-          <p className="text-xs text-amber-200/90">{errorMessage}</p>
+          <p className="text-xs text-warning">{errorMessage}</p>
         )}
       </div>
     );
@@ -222,7 +214,7 @@ export const StreamingPlayer = ({
         controls
         playsInline
         poster={poster ?? undefined}
-        className="aspect-video w-full rounded-lg border border-white/10 bg-black"
+        className="aspect-video w-full rounded-lg border border-border bg-black"
       >
         {subtitleUrl && (
           <track
@@ -235,13 +227,13 @@ export const StreamingPlayer = ({
           />
         )}
       </video>
-      <div className="glass-panel flex flex-wrap items-center gap-3 rounded-xl p-3 text-sm text-white/80">
+      <div className="glass-panel flex flex-wrap items-center gap-3 rounded-xl p-3 text-sm text-fg-muted">
         <label className="flex items-center gap-2">
           Speed
           <select
             value={playbackRate}
             onChange={(event) => setPlaybackRate(event.target.value)}
-            className="rounded-md border border-white/15 bg-black/30 px-2 py-1 text-sm"
+            className="rounded-md border border-border bg-black/30 px-2 py-1 text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none"
           >
             <option value="0.75">0.75x</option>
             <option value="1">1x</option>
@@ -255,23 +247,30 @@ export const StreamingPlayer = ({
             value={subtitleUrl}
             onChange={(event) => setSubtitleUrl(event.target.value)}
             placeholder="https://.../captions.vtt"
-            className="h-8 flex-1 rounded-md border border-white/15 bg-black/30 px-2 text-xs"
+            className="h-8 flex-1 rounded-md border border-border bg-black/30 px-2 text-xs text-fg placeholder:text-fg-faint focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none"
           />
         </label>
         {pipSupported && (
           <button
             type="button"
             onClick={togglePip}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-xs text-white/75 transition hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
           >
             <PictureInPicture2 className="h-3.5 w-3.5" />
             {pipActive ? "Exit PiP" : "Picture in picture"}
           </button>
         )}
+        <a
+          href={src}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto inline-flex items-center gap-1 text-xs text-fg-muted transition hover:text-fg"
+        >
+          Open in new tab
+          <ExternalLink className="h-3 w-3" />
+        </a>
       </div>
-      {errorMessage && (
-        <p className="text-xs text-amber-200/90">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-xs text-warning">{errorMessage}</p>}
     </div>
   );
 };

@@ -11,7 +11,7 @@ import { SkipIntroControls } from "@/components/player/skip-intro-controls";
 import { isTvTitleId, tmdbIdFromTitleId } from "@/lib/catalog/titleId";
 import { getSeasonEpisodes, getTvDetailByTitleId } from "@/lib/data/tv";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
-import { resolveVidkingUrlFromIdentifier } from "@/lib/vidking/resolveVidkingUrl";
+import { resolveProviderUrlsFromIdentifier } from "@/lib/streaming/resolveProviders";
 
 type Props = {
   params: { id: string };
@@ -54,10 +54,11 @@ export default async function TvWatchPage({
   const playImdbUrl = show.imdbTitleId
     ? toPlayableUrl(show.imdbTitleId, undefined, "playimdb")
     : toPlayableUrl(show.titleId, undefined, "playimdb");
-  const vidkingUrl = await resolveVidkingUrlFromIdentifier(show.titleId, {
+  const providers = await resolveProviderUrlsFromIdentifier(show.titleId, {
     season,
     episode
-  }).catch(() => null);
+  }).catch(() => []);
+  const primaryEmbed = providers[0]?.url ?? playImdbUrl;
 
   const currentEpisodeIndex = episodes.findIndex(
     (entry) => entry.episodeNumber === episode
@@ -110,7 +111,7 @@ export default async function TvWatchPage({
       <ActivePlayerBinder
         titleId={show.titleId}
         title={show.title}
-        src={vidkingUrl ?? playImdbUrl}
+        src={primaryEmbed}
         poster={show.backdropUrl ?? null}
         mediaType="tv"
         season={season}
@@ -138,8 +139,9 @@ export default async function TvWatchPage({
           <ServerTogglePlayer
             titleId={show.titleId}
             poster={show.backdropUrl}
-            playImdbUrl={playImdbUrl}
-            vidkingUrl={vidkingUrl}
+            providers={providers}
+            externalUrl={playImdbUrl}
+            externalLabel="Open on PlayIMDb"
             mediaType="tv"
             episodeLabel={episodeLabel}
           />
