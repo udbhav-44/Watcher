@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
+import { ChevronRight, ExternalLink, Shield } from "lucide-react";
 
 import { StreamingPlayer } from "@/components/player/StreamingPlayer";
 import { Button } from "@/components/ui/button";
@@ -183,10 +183,10 @@ export const ServerTogglePlayer = ({
 
         <div className="space-y-1.5 text-xs">
           <p className="inline-flex items-start gap-1.5 text-fg-muted">
-            <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
+            <Shield className="mt-0.5 h-3 w-3 shrink-0 text-accent" />
             <span>
-              Embeds are sandboxed — they can&apos;t redirect this tab. For
-              residual ad pop-ups, install{" "}
+              Free embed providers are ad-supported. Pick a green-dot server
+              for the lightest ads, and install{" "}
               <a
                 href="https://ublockorigin.com"
                 target="_blank"
@@ -194,8 +194,8 @@ export const ServerTogglePlayer = ({
                 className="text-accent hover:underline"
               >
                 uBlock Origin
-              </a>
-              .
+              </a>{" "}
+              to silence the rest.
             </span>
           </p>
           <p className="text-fg-faint">

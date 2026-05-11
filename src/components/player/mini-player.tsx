@@ -50,8 +50,7 @@ export const MiniPlayerHost = (): JSX.Element | null => {
           <iframe
             key={`${active.titleId}-${active.season ?? ""}-${active.episode ?? ""}`}
             src={active.src}
-            /* See StreamingPlayer for the rationale on these sandbox tokens. */
-            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-modals"
+            /* See StreamingPlayer for why this iframe is intentionally not sandboxed. */
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
             allowFullScreen
             referrerPolicy="no-referrer"

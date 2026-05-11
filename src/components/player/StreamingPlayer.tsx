@@ -191,29 +191,19 @@ export const StreamingPlayer = ({
         <iframe
           src={src}
           /*
-           * Sandbox notes. The free aggregators are picky:
-           *   - allow-scripts + allow-same-origin are required for their
-           *     video player to run and store its session.
-           *   - allow-popups is required for several providers (VidSrc,
-           *     MultiEmbed) which spawn the actual video host in a popup
-           *     window. Without it, playback never starts.
-           *   - allow-popups-to-escape-sandbox lets that popup unsandbox
-           *     itself so its own player can load. Same reason.
-           *   - allow-modals lets the embed show "click to play" prompts.
-           *
-           * What we intentionally OMIT:
-           *   - allow-top-navigation (+ allow-top-navigation-by-user-activation)
-           *     — this is the critical one. Without it, ad scripts inside
-           *     the embed cannot redirect the parent tab to a sketchy
-           *     destination, which is the single most jarring behavior
-           *     the user reported.
-           *
-           * Residual ad popups are mitigated by the browser's built-in
-           * popup blocker (which still applies even with allow-popups for
-           * non-gesture popups) plus the uBlock Origin recommendation in
-           * the UI.
+           * No `sandbox` attribute on purpose. Every free aggregator we
+           * support runs anti-sandbox detection scripts and shows an
+           * "Iframe Sandbox Detected" page if any sandbox attribute is
+           * present — there is no token combination that satisfies them
+           * AND blocks parent-tab navigation. Ad-redirect mitigation
+           * therefore lives elsewhere:
+           *   - referrerPolicy keeps the embed from knowing exactly which
+           *     campus page sent the request.
+           *   - The provider list is ordered by empirical ad quality and
+           *     the chip UI nudges users toward greener servers first.
+           *   - The UI explicitly recommends uBlock Origin as the proper
+           *     fix for residual pop-ups.
            */
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-modals"
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           allowFullScreen
           referrerPolicy="no-referrer"
