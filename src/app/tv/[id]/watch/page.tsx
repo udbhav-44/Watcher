@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
 import { EpisodeWatchRecorder } from "@/components/player/episode-watch-recorder";
 import { NextEpisodeOverlay } from "@/components/player/next-episode-overlay";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
 import { SkipIntroControls } from "@/components/player/skip-intro-controls";
-import { Card } from "@/components/ui/card";
 import { isTvTitleId, tmdbIdFromTitleId } from "@/lib/catalog/titleId";
 import { getSeasonEpisodes, getTvDetailByTitleId } from "@/lib/data/tv";
 import { toPlayableUrl } from "@/lib/imdb/toPlayableUrl";
@@ -95,8 +95,8 @@ export default async function TvWatchPage({
     }
   }
 
-  const episodeLabel = `S${season} • E${episode}${
-    currentEpisode ? ` · ${currentEpisode.name}` : ""
+  const episodeLabel = `S${season}  ·  E${episode}${
+    currentEpisode ? `  ·  ${currentEpisode.name}` : ""
   }`;
 
   return (
@@ -117,124 +117,168 @@ export default async function TvWatchPage({
         episode={episode}
         episodeName={currentEpisode?.name ?? null}
       />
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-3xl font-semibold">{show.title}</h1>
+
+      <div className="flex items-center justify-between gap-2">
         <Link
           href={`/tv/${show.titleId}`}
-          className="text-sm text-[#f2c46d] hover:underline"
+          className="inline-flex items-center gap-1 text-xs text-fg-muted transition hover:text-fg"
         >
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to series
         </Link>
+        {show.numberOfSeasons && (
+          <span className="text-xs text-fg-faint tabular-nums">
+            {show.numberOfSeasons} season{show.numberOfSeasons === 1 ? "" : "s"}
+          </span>
+        )}
       </div>
 
-      <ServerTogglePlayer
-        titleId={show.titleId}
-        poster={show.backdropUrl}
-        playImdbUrl={playImdbUrl}
-        vidkingUrl={vidkingUrl}
-        mediaType="tv"
-        episodeLabel={episodeLabel}
-      />
-
-      <NextEpisodeOverlay
-        titleId={show.titleId}
-        currentSeason={season}
-        currentEpisode={episode}
-        nextSeason={nextSeason}
-        nextEpisode={nextEpisode}
-        nextEpisodeName={nextEpisodeName}
-        nextEpisodeStillUrl={nextEpisodeStillUrl}
-        durationMinutes={
-          show.durationMinutes ?? currentEpisode?.runtime ?? null
-        }
-      />
-
-      <SkipIntroControls
-        titleId={show.titleId}
-        season={season}
-        episode={episode}
-        kind="intro"
-      />
-
-      {show.seasons.length > 0 && (
-        <Card className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs tracking-[0.16em] text-white/56 uppercase">
-              Seasons
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-4">
+          <ServerTogglePlayer
+            titleId={show.titleId}
+            poster={show.backdropUrl}
+            playImdbUrl={playImdbUrl}
+            vidkingUrl={vidkingUrl}
+            mediaType="tv"
+            episodeLabel={episodeLabel}
+          />
+          <div className="space-y-1">
+            <h1 className="text-balance text-3xl font-semibold text-fg md:text-4xl">
+              {show.title}
+            </h1>
+            <p className="text-sm text-fg-muted tabular-nums">
+              {episodeLabel}
             </p>
-            <p className="text-xs text-white/45">
-              {show.numberOfSeasons ?? show.seasons.length} total
-            </p>
+            {currentEpisode?.overview && (
+              <p className="max-w-prose text-pretty pt-2 text-sm leading-7 text-fg-muted">
+                {currentEpisode.overview}
+              </p>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {show.seasons.map((seasonEntry) => (
-              <Link
-                key={seasonEntry.seasonNumber}
-                href={`/tv/${show.titleId}/watch?s=${seasonEntry.seasonNumber}&e=1`}
-                className={
-                  seasonEntry.seasonNumber === season
-                    ? "rounded-full border border-[#f2c46d]/60 bg-[#f2c46d]/10 px-3 py-1 text-sm text-white"
-                    : "rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-sm text-white/70 hover:bg-white/[0.08]"
-                }
-              >
-                {seasonEntry.name}
-              </Link>
-            ))}
-          </div>
-        </Card>
-      )}
+          <NextEpisodeOverlay
+            titleId={show.titleId}
+            currentSeason={season}
+            currentEpisode={episode}
+            nextSeason={nextSeason}
+            nextEpisode={nextEpisode}
+            nextEpisodeName={nextEpisodeName}
+            nextEpisodeStillUrl={nextEpisodeStillUrl}
+            durationMinutes={
+              show.durationMinutes ?? currentEpisode?.runtime ?? null
+            }
+          />
+          <SkipIntroControls
+            titleId={show.titleId}
+            season={season}
+            episode={episode}
+            kind="intro"
+          />
+        </div>
 
-      {episodes.length > 0 && (
-        <Card className="space-y-3">
-          <p className="text-xs tracking-[0.16em] text-white/56 uppercase">
-            Episodes
-          </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {episodes.map((entry) => {
-              const active = entry.episodeNumber === episode;
-              return (
-                <Link
-                  key={`${entry.seasonNumber}-${entry.episodeNumber}`}
-                  href={`/tv/${show.titleId}/watch?s=${entry.seasonNumber}&e=${entry.episodeNumber}`}
-                  className={
-                    active
-                      ? "surface-panel grid grid-cols-[96px_1fr] gap-3 rounded-lg border border-[#f2c46d]/60 p-3"
-                      : "surface-panel grid grid-cols-[96px_1fr] gap-3 rounded-lg p-3 transition hover:bg-white/[0.06]"
-                  }
-                >
-                  <div className="relative h-[60px] w-[96px] overflow-hidden rounded-md bg-white/5">
-                    {entry.stillUrl ? (
-                      <Image
-                        src={entry.stillUrl}
-                        alt={entry.name}
-                        fill
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-[#1a1a1a]" />
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
-                      {entry.episodeNumber}. {entry.name}
-                    </p>
-                    <p className="line-clamp-2 text-xs text-white/56">
-                      {entry.overview ??
-                        "No synopsis available for this episode yet."}
-                    </p>
-                    {entry.runtime && (
-                      <p className="text-xs text-white/45">
-                        {entry.runtime} min
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+        <aside className="space-y-4">
+          {show.seasons.length > 0 && (
+            <div className="rounded-lg border border-border bg-surface-2/95 p-4 shadow-card">
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <p className="text-xs tracking-[0.18em] text-accent uppercase">
+                  Seasons
+                </p>
+                <p className="text-xs text-fg-faint tabular-nums">
+                  {show.numberOfSeasons ?? show.seasons.length} total
+                </p>
+              </div>
+              <div className="-mx-1 flex flex-wrap gap-1.5">
+                {show.seasons.map((seasonEntry) => {
+                  const active = seasonEntry.seasonNumber === season;
+                  return (
+                    <Link
+                      key={seasonEntry.seasonNumber}
+                      href={`/tv/${show.titleId}/watch?s=${seasonEntry.seasonNumber}&e=1`}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "rounded-full border border-accent/50 bg-accent-soft px-3 py-1 text-sm font-medium text-accent transition"
+                          : "rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-sm text-fg-muted transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
+                      }
+                    >
+                      {seasonEntry.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {episodes.length > 0 && (
+            <div className="rounded-lg border border-border bg-surface-2/95 shadow-card">
+              <div className="flex items-baseline justify-between gap-2 border-b border-border px-4 py-3">
+                <p className="text-xs tracking-[0.18em] text-accent uppercase">
+                  Episodes
+                </p>
+                <p className="text-xs text-fg-faint tabular-nums">
+                  {episodes.length}
+                </p>
+              </div>
+              <ol className="max-h-[640px] space-y-1 overflow-y-auto p-2">
+                {episodes.map((entry) => {
+                  const active = entry.episodeNumber === episode;
+                  return (
+                    <li key={`${entry.seasonNumber}-${entry.episodeNumber}`}>
+                      <Link
+                        href={`/tv/${show.titleId}/watch?s=${entry.seasonNumber}&e=${entry.episodeNumber}`}
+                        aria-current={active ? "page" : undefined}
+                        className={
+                          active
+                            ? "grid grid-cols-[96px_1fr] gap-3 rounded-md border border-accent/50 bg-accent-soft p-2"
+                            : "grid grid-cols-[96px_1fr] gap-3 rounded-md p-2 transition hover:bg-fg/[0.04]"
+                        }
+                      >
+                        <div className="relative h-[60px] w-[96px] overflow-hidden rounded-sm bg-surface-3">
+                          {entry.stillUrl ? (
+                            <Image
+                              src={entry.stillUrl}
+                              alt={entry.name}
+                              fill
+                              sizes="96px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-surface-3" />
+                          )}
+                        </div>
+                        <div className="min-w-0 space-y-0.5">
+                          <p
+                            className={
+                              active
+                                ? "line-clamp-1 text-sm font-medium text-fg"
+                                : "line-clamp-1 text-sm font-medium text-fg"
+                            }
+                          >
+                            <span className="text-fg-faint tabular-nums">
+                              {entry.episodeNumber}.
+                            </span>{" "}
+                            {entry.name}
+                          </p>
+                          {entry.overview && (
+                            <p className="line-clamp-2 text-xs text-fg-muted">
+                              {entry.overview}
+                            </p>
+                          )}
+                          {entry.runtime && (
+                            <p className="text-xs text-fg-faint tabular-nums">
+                              {entry.runtime} min
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

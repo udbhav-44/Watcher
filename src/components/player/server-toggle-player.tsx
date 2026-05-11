@@ -40,14 +40,15 @@ export const ServerTogglePlayer = ({
 
   return (
     <div className="space-y-3">
+      <StreamingPlayer src={activeUrl} poster={poster} titleId={titleId} />
       <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-lg p-3">
         <div className="space-y-0.5">
-          <p className="text-xs tracking-[0.15em] text-white/56 uppercase">
+          <p className="text-xs tracking-[0.15em] text-fg-faint uppercase">
             Server
           </p>
-          <p className="text-sm font-medium text-white/90">
+          <p className="text-sm font-medium text-fg">
             {provider === "playimdb" ? "PlayIMDb" : "Vidking"}
-            {episodeLabel ? ` • ${episodeLabel}` : ""}
+            {episodeLabel ? `  ·  ${episodeLabel}` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -71,20 +72,19 @@ export const ServerTogglePlayer = ({
         </div>
       </div>
       {isTv && provider === "playimdb" && (
-        <p className="text-xs text-amber-200/80">
+        <p className="text-xs text-warning">
           PlayIMDb opens the series page. Use Vidking for direct episode
           playback.
         </p>
       )}
       {!vidkingUrl && (
-        <p className="text-xs text-amber-200/80">
+        <p className="text-xs text-warning">
           Vidking embed unavailable for this title.
         </p>
       )}
-      <p className="text-xs text-white/55">
+      <p className="text-xs text-fg-faint">
         Switch servers if playback stalls.
       </p>
-      <StreamingPlayer src={activeUrl} poster={poster} titleId={titleId} />
     </div>
   );
 };

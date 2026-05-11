@@ -75,36 +75,36 @@ export const NextEpisodeOverlay = ({
   if (!visible || !nextSeason || !nextEpisode) return null;
 
   return (
-    <div className="surface-panel relative flex flex-wrap items-center gap-4 rounded-lg border border-[#f2c46d]/40 bg-[#0d0d0d]/95 p-4">
+    <div className="relative flex flex-wrap items-center gap-4 rounded-lg border border-accent/40 bg-overlay p-4 shadow-lift backdrop-blur">
       <button
         type="button"
         onClick={() => setVisible(false)}
-        className="absolute top-2 right-2 rounded-full p-1 text-white/50 transition hover:text-white"
+        className="absolute top-2 right-2 rounded-full p-1 text-fg-faint transition hover:bg-fg/10 hover:text-fg"
         aria-label="Dismiss next episode prompt"
       >
         <X className="h-4 w-4" />
       </button>
-      <div className="relative h-[72px] w-[128px] overflow-hidden rounded-md bg-white/5">
+      <div className="relative h-[72px] w-[128px] overflow-hidden rounded-md bg-surface-3">
         {nextEpisodeStillUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={nextEpisodeStillUrl}
             alt={nextEpisodeName ?? "Next episode"}
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full bg-[#1a1a1a]" />
+          <div className="h-full w-full bg-surface-3" />
         )}
       </div>
       <div className="flex-1 space-y-1">
-        <p className="text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
+        <p className="text-xs tracking-[0.18em] text-accent uppercase tabular-nums">
           Next episode in {countdown}s
         </p>
-        <p className="text-sm font-medium">
-          S{nextSeason} • E{nextEpisode}
-          {nextEpisodeName ? ` · ${nextEpisodeName}` : ""}
+        <p className="text-sm font-medium text-fg">
+          S{nextSeason}  ·  E{nextEpisode}
+          {nextEpisodeName ? `  ·  ${nextEpisodeName}` : ""}
         </p>
-        <p className="text-xs text-white/56">
+        <p className="text-xs text-fg-muted">
           Auto-playing soon. Skip the wait or pause to stay on the current
           episode.
         </p>
@@ -118,12 +118,12 @@ export const NextEpisodeOverlay = ({
         >
           {paused ? (
             <>
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="h-4 w-4" />
               Resume
             </>
           ) : (
             <>
-              <Pause className="mr-1 h-4 w-4" />
+              <Pause className="h-4 w-4" />
               Pause
             </>
           )}

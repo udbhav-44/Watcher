@@ -44,7 +44,7 @@ export const MiniPlayerHost = (): JSX.Element | null => {
   }`;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-[320px] overflow-hidden rounded-xl border border-white/15 bg-[#0d0d0d]/95 shadow-2xl backdrop-blur">
+    <div className="fixed bottom-4 right-4 z-40 w-[320px] overflow-hidden rounded-xl border border-border bg-overlay shadow-lift backdrop-blur">
       <div className="relative aspect-video w-full bg-black">
         {!paused && (
           <iframe
@@ -58,33 +58,33 @@ export const MiniPlayerHost = (): JSX.Element | null => {
           />
         )}
         {paused && (
-          <div className="flex h-full w-full items-center justify-center text-sm text-white/60">
+          <div className="flex h-full w-full items-center justify-center text-sm text-fg-muted">
             Paused
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-white/80">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-muted">
         <Link
           href={watchHref as `/watch/${string}` | `/tv/${string}/watch`}
-          className="line-clamp-1 hover:underline"
+          className="line-clamp-1 text-fg hover:underline"
         >
           {active.title}
           {active.mediaType === "tv" && active.season && active.episode
-            ? ` · S${active.season}E${active.episode}`
+            ? `  ·  S${active.season}E${active.episode}`
             : ""}
         </Link>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setPaused((value) => !value)}
-            className="rounded-full p-1 text-white/65 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full p-1 text-fg-muted transition hover:bg-fg/10 hover:text-fg"
             aria-label={paused ? "Resume mini-player" : "Pause mini-player"}
           >
             {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
           </button>
           <Link
             href={watchHref as `/watch/${string}` | `/tv/${string}/watch`}
-            className="rounded-full p-1 text-white/65 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full p-1 text-fg-muted transition hover:bg-fg/10 hover:text-fg"
             aria-label="Open full player"
           >
             <Maximize2 className="h-3.5 w-3.5" />
@@ -92,7 +92,7 @@ export const MiniPlayerHost = (): JSX.Element | null => {
           <button
             type="button"
             onClick={() => setMinimized(false)}
-            className="rounded-full p-1 text-white/65 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full p-1 text-fg-muted transition hover:bg-fg/10 hover:text-fg"
             aria-label="Hide mini-player"
           >
             <Minimize2 className="h-3.5 w-3.5" />
@@ -100,7 +100,7 @@ export const MiniPlayerHost = (): JSX.Element | null => {
           <button
             type="button"
             onClick={() => closePlayer()}
-            className="rounded-full p-1 text-white/65 transition hover:bg-white/10 hover:text-white"
+            className="rounded-full p-1 text-fg-muted transition hover:bg-fg/10 hover:text-fg"
             aria-label="Close mini-player"
           >
             <X className="h-3.5 w-3.5" />

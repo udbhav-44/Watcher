@@ -101,20 +101,20 @@ export const SkipIntroControls = ({
   };
 
   return (
-    <div className="surface-panel flex flex-wrap items-center gap-3 rounded-lg p-3 text-sm text-white/75">
-      <Bookmark className="h-4 w-4 text-[#f2c46d]" />
+    <div className="surface-panel flex flex-wrap items-center gap-3 rounded-lg p-3 text-sm text-fg-muted">
+      <Bookmark className="h-4 w-4 text-accent" />
       <div className="flex flex-1 flex-wrap items-center gap-2">
-        <span className="text-xs tracking-[0.16em] text-white/56 uppercase">
+        <span className="text-xs tracking-[0.16em] text-fg-faint uppercase">
           Skip {kind}
         </span>
         {marker ? (
-          <span className="text-xs text-white/60">
+          <span className="text-xs text-fg-muted tabular-nums">
             Saved at {marker.endSeconds}s. Embed players can&apos;t auto-skip,
             but use the player controls to seek when you see the next-episode
             UI.
           </span>
         ) : (
-          <span className="text-xs text-white/60">
+          <span className="text-xs text-fg-muted">
             Save a marker (e.g. 90s) so future episodes know where the intro
             ends.
           </span>
@@ -126,7 +126,7 @@ export const SkipIntroControls = ({
             <input
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              className="h-8 w-20 rounded-md border border-white/15 bg-black/30 px-2 text-xs"
+              className="h-8 w-20 rounded-md border border-border bg-black/30 px-2 text-xs text-fg tabular-nums focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none"
               aria-label="Intro end seconds"
             />
             <Button type="button" size="sm" onClick={save}>
@@ -160,7 +160,7 @@ export const SkipIntroControls = ({
               href="https://www.youtube.com/results?search_query=skip+intro"
               target="_blank"
               rel="noreferrer"
-              className="hidden text-xs text-white/40 sm:inline-flex sm:items-center"
+              className="hidden text-xs text-fg-faint sm:inline-flex sm:items-center"
             >
               Tip
               <ExternalLink className="ml-1 h-3 w-3" />
