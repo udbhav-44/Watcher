@@ -1,5 +1,7 @@
-import { DiscoveryFilters } from "@/components/movies/discovery-filters";
+import { CatalogFilterChips } from "@/components/movies/catalog-filter-chips";
+import { MovieCard } from "@/components/movies/movie-card";
 import { MovieRail } from "@/components/movies/movie-rail";
+import { EmptyState } from "@/components/ui/empty-state";
 import { discoverTv, getTvFeaturedRails } from "@/lib/data/tv";
 
 type Props = {
@@ -8,7 +10,6 @@ type Props = {
     yearFrom?: string;
     yearTo?: string;
     sort?: "popularity" | "release_date" | "rating";
-    language?: string;
   };
 };
 
@@ -21,33 +22,65 @@ export default async function TvIndexPage({
       genre: searchParams.genre,
       yearFrom: Number(searchParams.yearFrom ?? "") || undefined,
       yearTo: Number(searchParams.yearTo ?? "") || undefined,
-      sort: searchParams.sort,
-      language: searchParams.language
+      sort: searchParams.sort
     })
   ]);
 
+  const hasFilters = Boolean(
+    searchParams.genre ||
+      searchParams.yearFrom ||
+      searchParams.yearTo ||
+      searchParams.sort
+  );
+
   return (
     <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-semibold">TV shows</h1>
-        <p className="text-sm text-white/62">
-          Series, mini-series, and seasons. Filter by genre, year, and rating.
+      <div className="space-y-2">
+        <p className="text-xs tracking-[0.22em] text-accent uppercase">
+          Catalog
+        </p>
+        <h1 className="text-3xl font-semibold text-fg">TV shows</h1>
+        <p className="max-w-prose text-pretty text-sm text-fg-muted">
+          Series, mini-series, and seasons. Tap a chip to refine instantly.
         </p>
       </div>
-      <DiscoveryFilters
-        action="/tv"
-        genre={searchParams.genre}
-        yearFrom={searchParams.yearFrom}
-        yearTo={searchParams.yearTo}
-        sort={searchParams.sort}
-        language={searchParams.language}
-        scope="tv"
-        submitLabel="Apply filters"
-      />
-      <MovieRail title="Filtered results" movies={filtered.slice(0, 18)} />
-      {rails.map((rail) => (
-        <MovieRail key={rail.slug} title={rail.label} movies={rail.movies} />
-      ))}
+
+      <CatalogFilterChips base="/tv" scope="tv" filters={searchParams} />
+
+      {hasFilters ? (
+        <>
+          <p className="text-sm text-fg-muted tabular-nums">
+            {filtered.length}{" "}
+            {filtered.length === 1 ? "result" : "results"}
+          </p>
+          {filtered.length > 0 ? (
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))"
+              }}
+            >
+              {filtered.slice(0, 60).map((entry) => (
+                <MovieCard key={entry.id} movie={entry} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No matches"
+              description="Try widening the era, choosing a different genre, or clearing filters."
+            />
+          )}
+        </>
+      ) : (
+        <div className="space-y-10">
+          {filtered.length > 0 && (
+            <MovieRail title="Trending now" movies={filtered.slice(0, 18)} />
+          )}
+          {rails.map((rail) => (
+            <MovieRail key={rail.slug} title={rail.label} movies={rail.movies} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
