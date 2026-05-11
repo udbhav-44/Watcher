@@ -1,27 +1,80 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
+import { Search as SearchIcon, X } from "lucide-react";
 
-import { DiscoveryFilters } from "@/components/movies/discovery-filters";
-import { SearchAutocomplete } from "@/components/movies/search-autocomplete";
+import { MovieCard } from "@/components/movies/movie-card";
 import { RecordSearch } from "@/components/profile/record-search";
-import { detailHrefFor } from "@/lib/catalog/titleId";
+import { SearchAutocomplete } from "@/components/movies/search-autocomplete";
+import { EmptyState } from "@/components/ui/empty-state";
 import { searchMovies } from "@/lib/data/movies";
 import { searchTv } from "@/lib/data/tv";
 import { applyDiscoveryFilters } from "@/lib/data/tmdb";
-import type { MovieCard } from "@/lib/types";
+import type { MovieCard as MovieCardType } from "@/lib/types";
+
+type Scope = "all" | "movie" | "tv";
+type Sort = "popularity" | "release_date" | "rating";
+
+type SearchParams = {
+  q?: string;
+  genre?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  sort?: Sort;
+  language?: string;
+  type?: Scope;
+};
 
 type Props = {
-  searchParams: {
-    q?: string;
-    genre?: string;
-    yearFrom?: string;
-    yearTo?: string;
-    sort?: "popularity" | "release_date" | "rating";
-    language?: string;
-    type?: "all" | "movie" | "tv";
-  };
+  searchParams: SearchParams;
 };
+
+const QUICK_GENRES = [
+  "Action",
+  "Drama",
+  "Comedy",
+  "Sci-Fi",
+  "Thriller",
+  "Romance",
+  "Animation",
+  "Horror",
+  "Documentary",
+  "Crime"
+];
+
+const SORT_OPTIONS: Array<{ value: Sort; label: string }> = [
+  { value: "popularity", label: "Popular" },
+  { value: "release_date", label: "Latest" },
+  { value: "rating", label: "Top rated" }
+];
+
+const ERA_PRESETS: Array<{ id: string; label: string; yearFrom?: string; yearTo?: string }> = [
+  { id: "any", label: "Any era" },
+  { id: "now", label: "This year", yearFrom: String(new Date().getFullYear()) },
+  { id: "recent", label: "Last 5 years", yearFrom: String(new Date().getFullYear() - 5) },
+  { id: "decade", label: "Last decade", yearFrom: String(new Date().getFullYear() - 10) },
+  { id: "2000s", label: "2000s", yearFrom: "2000", yearTo: "2009" },
+  { id: "classics", label: "Classics", yearTo: "1999" }
+];
+
+const SCOPES: Array<{ value: Scope; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "movie", label: "Movies" },
+  { value: "tv", label: "TV" }
+];
+
+function buildHref(
+  params: SearchParams,
+  overrides: Partial<SearchParams>
+): Route {
+  const next = new URLSearchParams();
+  const merged: SearchParams = { ...params, ...overrides };
+  for (const [key, value] of Object.entries(merged)) {
+    if (value === undefined || value === null || value === "") continue;
+    next.set(key, value);
+  }
+  const qs = next.toString();
+  return (qs ? `/search?${qs}` : "/search") as Route;
+}
 
 export default async function SearchPage({
   searchParams
@@ -35,8 +88,8 @@ export default async function SearchPage({
     language: searchParams.language
   };
 
-  const scope = searchParams.type ?? "all";
-  let results: MovieCard[] = [];
+  const scope: Scope = searchParams.type ?? "all";
+  let results: MovieCardType[] = [];
 
   if (query) {
     if (scope === "tv") {
@@ -55,97 +108,203 @@ export default async function SearchPage({
     }
   }
 
+  const activeEra = ERA_PRESETS.find((era) => {
+    if (era.id === "any") {
+      return !searchParams.yearFrom && !searchParams.yearTo;
+    }
+    return (
+      (era.yearFrom ?? undefined) === (searchParams.yearFrom ?? undefined) &&
+      (era.yearTo ?? undefined) === (searchParams.yearTo ?? undefined)
+    );
+  });
+  const activeSort = searchParams.sort ?? "popularity";
+  const hasFilters = Boolean(
+    searchParams.genre ||
+      searchParams.yearFrom ||
+      searchParams.yearTo ||
+      searchParams.sort
+  );
+
   return (
     <div className="space-y-6">
       <RecordSearch query={query} />
-      <div className="space-y-1">
-        <h1 className="text-3xl font-semibold">Search</h1>
-        <p className="text-sm text-white/62">Find a title, genre, or year.</p>
+
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold text-fg">Search</h1>
+        <p className="text-sm text-fg-muted">
+          Find a title, genre, or year. Filters apply instantly.
+        </p>
       </div>
+
       <SearchAutocomplete initialQuery={query} />
-      <DiscoveryFilters
-        action="/search"
-        query={query}
-        genre={searchParams.genre}
-        yearFrom={searchParams.yearFrom}
-        yearTo={searchParams.yearTo}
-        sort={searchParams.sort}
-        language={searchParams.language}
-        scope={scope === "tv" ? "tv" : "movie"}
-        submitLabel="Search"
-      />
-      <div className="flex items-center gap-2 text-xs text-white/56">
-        <span>Type:</span>
-        {(
-          [
-            { value: "all", label: "All" },
-            { value: "movie", label: "Movies" },
-            { value: "tv", label: "TV" }
-          ] as const
-        ).map((entry) => {
-          const params = new URLSearchParams();
-          if (query) params.set("q", query);
-          if (searchParams.genre) params.set("genre", searchParams.genre);
-          if (searchParams.yearFrom) params.set("yearFrom", searchParams.yearFrom);
-          if (searchParams.yearTo) params.set("yearTo", searchParams.yearTo);
-          if (searchParams.sort) params.set("sort", searchParams.sort);
-          if (searchParams.language) params.set("language", searchParams.language);
-          params.set("type", entry.value);
-          const active = scope === entry.value;
-          return (
-            <Link
-              key={entry.value}
-              href={`/search?${params.toString()}` as Route}
-              className={
-                active
-                  ? "rounded-full border border-[#f2c46d]/60 bg-[#f2c46d]/15 px-3 py-1 text-white"
-                  : "rounded-full border border-white/15 bg-white/[0.04] px-3 py-1 text-white/65 hover:bg-white/[0.08]"
-              }
-            >
-              {entry.label}
-            </Link>
-          );
-        })}
-      </div>
-      <p className="text-sm text-white/56">{results.length} titles found</p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {results.map((entry) => (
-          <Link
-            key={entry.id}
-            href={detailHrefFor(entry.titleId)}
-            className="surface-panel grid grid-cols-[72px_1fr] gap-3 rounded-lg p-3 transition hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70"
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <ScopeFilter scope={scope} searchParams={searchParams} />
+        </div>
+
+        <FilterRow label="Genre">
+          <Chip
+            href={buildHref(searchParams, { genre: undefined })}
+            active={!searchParams.genre}
           >
-            <div className="relative h-[102px] overflow-hidden rounded-md bg-white/5">
-              {entry.posterUrl ? (
-                <Image
-                  src={entry.posterUrl}
-                  alt={entry.title}
-                  fill
-                  className="object-cover"
-                  sizes="72px"
-                />
-              ) : (
-                <div className="h-full w-full bg-[#1a1a1a]" />
-              )}
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold">
-                {entry.title}
-                <span className="ml-2 text-xs text-white/45">
-                  {entry.mediaType === "tv" ? "TV" : "Movie"}
-                </span>
-              </p>
-              <p className="text-xs text-white/56">
-                {entry.releaseYear ?? "TBA"}{" "}
-                {entry.genres[0] ? `• ${entry.genres[0]}` : ""}
-              </p>
-              <p className="line-clamp-2 text-sm text-white/68">
-                {entry.synopsis}
-              </p>
-            </div>
-          </Link>
-        ))}
+            Any
+          </Chip>
+          {QUICK_GENRES.map((g) => (
+            <Chip
+              key={g}
+              href={buildHref(searchParams, { genre: g })}
+              active={searchParams.genre === g}
+            >
+              {g}
+            </Chip>
+          ))}
+        </FilterRow>
+
+        <FilterRow label="Era">
+          {ERA_PRESETS.map((era) => (
+            <Chip
+              key={era.id}
+              href={buildHref(searchParams, {
+                yearFrom: era.yearFrom,
+                yearTo: era.yearTo
+              })}
+              active={activeEra?.id === era.id}
+            >
+              {era.label}
+            </Chip>
+          ))}
+        </FilterRow>
+
+        <FilterRow label="Sort">
+          {SORT_OPTIONS.map((option) => (
+            <Chip
+              key={option.value}
+              href={buildHref(searchParams, { sort: option.value })}
+              active={activeSort === option.value}
+            >
+              {option.label}
+            </Chip>
+          ))}
+        </FilterRow>
+
+        {hasFilters && (
+          <div>
+            <Link
+              href={buildHref({ q: query, type: scope }, {})}
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:bg-fg/[0.08] hover:text-fg"
+            >
+              <X className="h-3 w-3" />
+              Clear filters
+            </Link>
+          </div>
+        )}
       </div>
+
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm text-fg-muted tabular-nums">
+          {query
+            ? `${results.length} ${results.length === 1 ? "result" : "results"}`
+            : "Start typing above to search"}
+        </p>
+      </div>
+
+      {query && results.length === 0 ? (
+        <EmptyState
+          icon={<SearchIcon className="h-5 w-5" />}
+          title={`No results for "${query}"`}
+          description="Try a different genre, broaden the era, or check the spelling."
+          action={
+            <Link
+              href={buildHref({ q: query, type: scope }, {})}
+              className="inline-flex items-center gap-1 rounded-full bg-accent px-4 py-2 text-sm font-medium text-fg-on-accent transition hover:bg-accent-hover"
+            >
+              Clear filters
+            </Link>
+          }
+        />
+      ) : results.length > 0 ? (
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))" }}
+        >
+          {results.map((entry) => (
+            <MovieCard key={entry.id} movie={entry} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
+
+const ScopeFilter = ({
+  scope,
+  searchParams
+}: {
+  scope: Scope;
+  searchParams: SearchParams;
+}): JSX.Element => (
+  <div
+    role="tablist"
+    aria-label="Filter by media type"
+    className="inline-flex items-center rounded-full border border-border bg-fg/[0.04] p-1"
+  >
+    {SCOPES.map((entry) => {
+      const isActive = scope === entry.value;
+      return (
+        <Link
+          key={entry.value}
+          href={buildHref(searchParams, { type: entry.value })}
+          role="tab"
+          aria-selected={isActive}
+          className={
+            isActive
+              ? "rounded-full bg-fg/[0.1] px-3 py-1 text-xs text-fg"
+              : "rounded-full px-3 py-1 text-xs text-fg-muted transition hover:bg-fg/[0.06] hover:text-fg"
+          }
+        >
+          {entry.label}
+        </Link>
+      );
+    })}
+  </div>
+);
+
+const FilterRow = ({
+  label,
+  children
+}: {
+  label: string;
+  children: React.ReactNode;
+}): JSX.Element => (
+  <div className="flex items-center gap-3">
+    <span className="w-14 shrink-0 text-xs tracking-wide text-fg-faint uppercase">
+      {label}
+    </span>
+    <div className="-mx-2 flex flex-1 flex-wrap gap-2 overflow-x-auto px-2 py-0.5">
+      {children}
+    </div>
+  </div>
+);
+
+const Chip = ({
+  href,
+  active,
+  children
+}: {
+  href: Route;
+  active?: boolean;
+  children: React.ReactNode;
+}): JSX.Element => (
+  <Link
+    href={href}
+    aria-pressed={active}
+    className={
+      active
+        ? "shrink-0 rounded-full border border-accent/50 bg-accent-soft px-3 py-1 text-xs font-medium text-accent transition"
+        : "shrink-0 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
+    }
+  >
+    {children}
+  </Link>
+);

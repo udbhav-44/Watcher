@@ -1,14 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Play } from "lucide-react";
+import { Calendar, Clock, Play, Shield, Star } from "lucide-react";
 
 import { MovieRail } from "@/components/movies/movie-rail";
 import { RatingWidget } from "@/components/movies/rating-widget";
 import { TitleActions } from "@/components/movies/title-actions";
+import { TitleTabs } from "@/components/movies/title-tabs";
 import { TrailerModal } from "@/components/movies/trailer-modal";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { isTvTitleId } from "@/lib/catalog/titleId";
 import { getMovieByTitleId, getSimilarMovies } from "@/lib/data/movies";
 
@@ -29,9 +29,17 @@ export default async function TitleDetailPage({
   const heroArtwork = movie.backdropUrl ?? movie.posterUrl;
   const similar = movie.tmdbId ? await getSimilarMovies(movie.tmdbId) : [];
 
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    movie.castDetails && movie.castDetails.length > 0
+      ? { id: "cast", label: "Cast" }
+      : null,
+    similar.length > 0 ? { id: "similar", label: "More like this" } : null
+  ].filter((entry): entry is { id: string; label: string } => entry !== null);
+
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-lg border border-white/10">
+    <div className="space-y-10">
+      <section className="relative overflow-hidden rounded-xl border border-border">
         {heroArtwork ? (
           <Image
             src={heroArtwork}
@@ -42,45 +50,48 @@ export default async function TitleDetailPage({
             priority
           />
         ) : (
-          <div className="absolute inset-0 bg-[#121212]" />
+          <div className="absolute inset-0 bg-surface-2" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-[#070707]/88 to-[#070707]/36" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-base via-base/88 to-base/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-transparent" />
         <div className="relative flex min-h-[420px] items-end p-6 md:min-h-[560px] md:p-10">
           <div className="max-w-3xl space-y-4">
-            <p className="text-sm tracking-[0.22em] text-[#f2c46d] uppercase">
-              {movie.genres.join(" • ")}
+            <p className="text-sm tracking-[0.22em] text-accent uppercase">
+              {movie.genres.slice(0, 3).join(" · ")}
             </p>
-            <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
+            <h1 className="text-balance text-4xl leading-tight font-semibold text-fg md:text-6xl">
               {movie.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
-              <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1">
-                {movie.releaseYear ?? "TBA"}
-              </span>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+              {movie.releaseYear && (
+                <MetaPill icon={<Calendar className="h-3 w-3" />} label={`${movie.releaseYear}`} />
+              )}
               {movie.maturityRating && (
-                <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1">
-                  {movie.maturityRating}
-                </span>
+                <MetaPill icon={<Shield className="h-3 w-3" />} label={movie.maturityRating} />
               )}
               {movie.durationMinutes && (
-                <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1">
-                  {movie.durationMinutes} min
-                </span>
+                <MetaPill
+                  icon={<Clock className="h-3 w-3" />}
+                  label={`${movie.durationMinutes} min`}
+                />
               )}
-              {movie.voteAverage != null && (
-                <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1">
-                  ★ {movie.voteAverage.toFixed(1)}
-                </span>
+              {movie.voteAverage != null && movie.voteAverage > 0 && (
+                <MetaPill
+                  icon={<Star className="h-3 w-3 fill-accent text-accent" />}
+                  label={`${movie.voteAverage.toFixed(1)} TMDb`}
+                  tone="accent"
+                />
               )}
             </div>
-            <p className="max-w-2xl text-sm text-white/80 md:text-base">
-              {movie.synopsis}
-            </p>
-            <div className="flex flex-wrap gap-3">
+            {movie.synopsis && (
+              <p className="max-w-2xl text-pretty text-sm text-fg-muted md:text-base">
+                {movie.synopsis}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link href={`/watch/${movie.titleId}`}>
                 <Button size="lg">
-                  <Play className="mr-2 h-5 w-5 fill-current" />
+                  <Play className="h-5 w-5 fill-current" />
                   Play
                 </Button>
               </Link>
@@ -98,81 +109,147 @@ export default async function TitleDetailPage({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <p className="mb-2 text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
+      {tabs.length > 1 && <TitleTabs tabs={tabs} />}
+
+      <section
+        id="overview"
+        aria-labelledby="overview-heading"
+        className="grid scroll-mt-32 gap-4 md:grid-cols-3"
+      >
+        <div className="rounded-lg border border-border bg-surface-2/95 p-5 shadow-card md:col-span-2">
+          <h2
+            id="overview-heading"
+            className="mb-2 text-xs tracking-[0.18em] text-accent uppercase"
+          >
             Overview
+          </h2>
+          <p className="text-pretty text-sm leading-7 text-fg-muted">
+            {movie.synopsis ?? "No overview available for this title yet."}
           </p>
-          <p className="text-sm leading-7 text-white/78">{movie.synopsis}</p>
           {movie.director && (
-            <p className="mt-3 text-sm text-white/60">
+            <p className="mt-4 text-sm text-fg-faint">
               Director:{" "}
-              <span className="text-white/85">{movie.director}</span>
+              <span className="text-fg">{movie.director}</span>
             </p>
           )}
-        </Card>
-        <Card>
-          <p className="mb-2 text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
+        </div>
+        <div className="rounded-lg border border-border bg-surface-2/95 p-5 shadow-card">
+          <h2 className="mb-3 text-xs tracking-[0.18em] text-accent uppercase">
             Details
-          </p>
-          <div className="space-y-2 text-sm text-white/75">
-            <p>Genres: {movie.genres.join(", ")}</p>
-            <p>Release: {movie.releaseYear ?? "TBA"}</p>
-            <p>
-              Runtime:{" "}
-              {movie.durationMinutes
-                ? `${movie.durationMinutes} min`
-                : "Unknown"}
-            </p>
-            <p>Rating: {movie.maturityRating ?? "Not listed"}</p>
-            <p>Catalog ID: {movie.titleId}</p>
-          </div>
-        </Card>
-      </div>
+          </h2>
+          <dl className="space-y-2 text-sm">
+            <DetailRow label="Genres" value={movie.genres.join(", ") || "—"} />
+            <DetailRow label="Release" value={movie.releaseYear?.toString() ?? "TBA"} />
+            <DetailRow
+              label="Runtime"
+              value={
+                movie.durationMinutes ? `${movie.durationMinutes} min` : "Unknown"
+              }
+            />
+            <DetailRow label="Rating" value={movie.maturityRating ?? "Not listed"} />
+            <DetailRow label="Catalog ID" value={movie.titleId} mono />
+          </dl>
+        </div>
+      </section>
 
       {movie.castDetails && movie.castDetails.length > 0 && (
-        <Card>
-          <p className="mb-3 text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
-            Cast
-          </p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
-            {movie.castDetails.slice(0, 12).map((member) => (
+        <section
+          id="cast"
+          aria-labelledby="cast-heading"
+          className="scroll-mt-32 space-y-3"
+        >
+          <div className="flex items-end justify-between gap-3">
+            <h2 id="cast-heading" className="text-xl font-medium text-fg">
+              Cast
+            </h2>
+            <span className="text-xs text-fg-faint tabular-nums">
+              {movie.castDetails.length} credited
+            </span>
+          </div>
+          <div className="rail-scroll -mx-4 flex gap-4 overflow-x-auto px-4 pb-2">
+            {movie.castDetails.slice(0, 24).map((member) => (
               <div
                 key={`${member.name}-${member.character ?? ""}`}
-                className="space-y-1 text-center"
+                className="w-[128px] shrink-0 space-y-2 text-center"
               >
-                <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-full bg-white/5">
+                <div className="relative mx-auto h-[128px] w-[128px] overflow-hidden rounded-full border border-border bg-surface-3">
                   {member.profileUrl ? (
                     <Image
                       src={member.profileUrl}
                       alt={member.name}
                       fill
                       className="object-cover"
-                      sizes="80px"
+                      sizes="128px"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-white/40">
+                    <div className="flex h-full w-full items-center justify-center text-xl text-fg-faint">
                       {member.name.slice(0, 1)}
                     </div>
                   )}
                 </div>
-                <p className="line-clamp-1 text-sm font-medium">
-                  {member.name}
-                </p>
-                {member.character && (
-                  <p className="line-clamp-1 text-xs text-white/56">
-                    {member.character}
+                <div className="space-y-0.5">
+                  <p className="line-clamp-1 text-sm font-medium text-fg">
+                    {member.name}
                   </p>
-                )}
+                  {member.character && (
+                    <p className="line-clamp-1 text-xs text-fg-faint">
+                      {member.character}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        </Card>
+        </section>
       )}
 
       {similar.length > 0 && (
-        <MovieRail title="More like this" movies={similar} />
+        <section id="similar" className="scroll-mt-32">
+          <MovieRail title="More like this" movies={similar} />
+        </section>
       )}
     </div>
   );
 }
+
+type MetaPillProps = {
+  icon: React.ReactNode;
+  label: string;
+  tone?: "default" | "accent";
+};
+
+const MetaPill = ({ icon, label, tone = "default" }: MetaPillProps): JSX.Element => (
+  <span
+    className={
+      tone === "accent"
+        ? "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent-soft px-3 py-1 text-accent tabular-nums"
+        : "inline-flex items-center gap-1 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-fg-muted tabular-nums"
+    }
+  >
+    {icon}
+    {label}
+  </span>
+);
+
+const DetailRow = ({
+  label,
+  value,
+  mono = false
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}): JSX.Element => (
+  <div className="flex items-baseline justify-between gap-3">
+    <dt className="text-xs tracking-wide text-fg-faint uppercase">{label}</dt>
+    <dd
+      className={
+        mono
+          ? "max-w-[60%] truncate text-right font-mono text-xs text-fg"
+          : "max-w-[60%] truncate text-right text-fg"
+      }
+    >
+      {value}
+    </dd>
+  </div>
+);

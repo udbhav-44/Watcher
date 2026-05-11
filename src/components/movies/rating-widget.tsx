@@ -67,13 +67,13 @@ export const RatingWidget = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 text-sm text-white/70",
+        "flex items-center gap-2 text-sm text-fg-muted",
         className
       )}
       role="radiogroup"
       aria-label="Rate this title"
     >
-      <span className="text-xs tracking-[0.16em] text-white/56 uppercase">
+      <span className="text-xs tracking-[0.16em] text-fg-faint uppercase">
         Your rating
       </span>
       <div className="flex items-center gap-1">
@@ -91,8 +91,8 @@ export const RatingWidget = ({
             aria-checked={score === value}
             role="radio"
             className={cn(
-              "rounded p-1 transition focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70 focus-visible:outline-none",
-              value <= display ? "text-[#f2c46d]" : "text-white/30"
+              "rounded p-1 transition focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none",
+              value <= display ? "text-accent" : "text-fg/30"
             )}
           >
             <Star
@@ -103,7 +103,7 @@ export const RatingWidget = ({
         ))}
       </div>
       {score && !pending && (
-        <span className="text-xs text-white/56">{score}/5</span>
+        <span className="text-xs text-fg-faint tabular-nums">{score}/5</span>
       )}
     </div>
   );

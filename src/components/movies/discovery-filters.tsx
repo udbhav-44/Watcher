@@ -83,6 +83,11 @@ export const DiscoveryFilters = ({
   const genres = scope === "tv" ? tvGenreOptions : movieGenreOptions;
   const isSearch = action === "/search";
 
+  const selectClass =
+    "h-10 w-full rounded-lg border border-border bg-black/35 px-3 text-sm text-fg outline-none transition focus-visible:border-accent/40 focus-visible:ring-2 focus-visible:ring-accent/70";
+  const labelClass =
+    "mb-1 block text-xs tracking-wide text-fg-faint uppercase";
+
   return (
     <form
       className="surface-panel grid gap-3 rounded-lg p-4 md:grid-cols-12"
@@ -90,10 +95,7 @@ export const DiscoveryFilters = ({
     >
       {isSearch && (
         <div className="md:col-span-4">
-          <label
-            htmlFor="q"
-            className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-          >
+          <label htmlFor="q" className={labelClass}>
             Title or keyword
           </label>
           <Input
@@ -105,17 +107,14 @@ export const DiscoveryFilters = ({
         </div>
       )}
       <div className={isSearch ? "md:col-span-2" : "md:col-span-3"}>
-        <label
-          htmlFor="genre"
-          className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-        >
+        <label htmlFor="genre" className={labelClass}>
           Genre
         </label>
         <select
           id="genre"
           name="genre"
           defaultValue={genre ?? ""}
-          className="h-10 w-full rounded-lg border border-white/15 bg-black/35 px-3 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70"
+          className={selectClass}
         >
           <option value="">Any genre</option>
           {genres.map((entry) => (
@@ -125,11 +124,8 @@ export const DiscoveryFilters = ({
           ))}
         </select>
       </div>
-      <div className={isSearch ? "md:col-span-2" : "md:col-span-2"}>
-        <label
-          htmlFor="yearFrom"
-          className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-        >
+      <div className="md:col-span-2">
+        <label htmlFor="yearFrom" className={labelClass}>
           From year
         </label>
         <Input
@@ -139,11 +135,8 @@ export const DiscoveryFilters = ({
           placeholder="2000"
         />
       </div>
-      <div className={isSearch ? "md:col-span-2" : "md:col-span-2"}>
-        <label
-          htmlFor="yearTo"
-          className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-        >
+      <div className="md:col-span-2">
+        <label htmlFor="yearTo" className={labelClass}>
           To year
         </label>
         <Input
@@ -154,17 +147,14 @@ export const DiscoveryFilters = ({
         />
       </div>
       <div className={isSearch ? "md:col-span-1" : "md:col-span-2"}>
-        <label
-          htmlFor="language"
-          className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-        >
+        <label htmlFor="language" className={labelClass}>
           Language
         </label>
         <select
           id="language"
           name="language"
           defaultValue={language ?? "all"}
-          className="h-10 w-full rounded-lg border border-white/15 bg-black/35 px-3 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70"
+          className={selectClass}
         >
           {languageOptions.map((entry) => (
             <option key={entry.value} value={entry.value}>
@@ -174,17 +164,14 @@ export const DiscoveryFilters = ({
         </select>
       </div>
       <div className={isSearch ? "md:col-span-1" : "md:col-span-3"}>
-        <label
-          htmlFor="sort"
-          className="mb-1 block text-xs tracking-wide text-white/56 uppercase"
-        >
+        <label htmlFor="sort" className={labelClass}>
           Sort
         </label>
         <select
           id="sort"
           name="sort"
           defaultValue={sort ?? "popularity"}
-          className="h-10 w-full rounded-lg border border-white/15 bg-black/35 px-3 text-sm text-white outline-none focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70"
+          className={selectClass}
         >
           <option value="popularity">Popularity</option>
           <option value="release_date">Release date</option>

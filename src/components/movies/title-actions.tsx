@@ -190,7 +190,7 @@ export const TitleActions = ({
         size="lg"
         onClick={toggleWatchlist}
       >
-        <Bookmark className="mr-2 h-4 w-4" />
+        <Bookmark className="h-4 w-4" />
         {inDefault ? "Saved" : "Save"}
       </Button>
       <div className="relative">
@@ -203,16 +203,16 @@ export const TitleActions = ({
           aria-expanded={open}
         >
           Save to...
-          <ChevronDown className="ml-2 h-4 w-4" />
+          <ChevronDown className="h-4 w-4" />
         </Button>
         {open && (
           <div
             role="menu"
-            className="absolute top-full right-0 z-50 mt-2 w-64 rounded-lg border border-white/15 bg-[#0d0d0d]/95 p-2 shadow-xl backdrop-blur"
+            className="absolute top-full right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-overlay p-2 shadow-lift backdrop-blur"
           >
             <div className="max-h-60 space-y-1 overflow-y-auto">
               {collections.length === 0 && (
-                <p className="px-2 py-2 text-xs text-white/56">
+                <p className="px-2 py-2 text-xs text-fg-faint">
                   No collections yet. Create one below.
                 </p>
               )}
@@ -225,17 +225,19 @@ export const TitleActions = ({
                     role="menuitemcheckbox"
                     aria-checked={checked}
                     onClick={() => toggleCollection(collection.slug)}
-                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
+                    className={
                       checked
-                        ? "bg-white/[0.08] text-white"
-                        : "text-white/70 hover:bg-white/[0.06]"
-                    }`}
+                        ? "flex w-full items-center justify-between rounded-md bg-fg/[0.08] px-3 py-2 text-left text-sm text-fg transition"
+                        : "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm text-fg-muted transition hover:bg-fg/[0.06] hover:text-fg"
+                    }
                   >
                     <span className="line-clamp-1">{collection.name}</span>
                     <span
-                      className={`text-xs ${
-                        checked ? "text-[#f2c46d]" : "text-white/40"
-                      }`}
+                      className={
+                        checked
+                          ? "text-xs text-accent"
+                          : "text-xs text-fg-faint"
+                      }
                     >
                       {checked ? "Saved" : "Save"}
                     </span>
@@ -243,19 +245,19 @@ export const TitleActions = ({
                 );
               })}
             </div>
-            <div className="mt-2 flex items-center gap-2 border-t border-white/10 pt-2">
+            <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
               <input
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
                 placeholder="New collection"
-                className="h-8 flex-1 rounded-md border border-white/15 bg-black/30 px-2 text-xs text-white placeholder:text-white/40 focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70 focus-visible:outline-none"
+                className="h-8 flex-1 rounded-md border border-border bg-black/30 px-2 text-xs text-fg placeholder:text-fg-faint focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none"
                 aria-label="New collection name"
               />
               <button
                 type="button"
                 onClick={createCollection}
                 disabled={!newName.trim() || creating}
-                className="inline-flex items-center gap-1 rounded-md bg-[#f2c46d]/90 px-2 py-1 text-xs font-semibold text-black transition hover:bg-[#f2c46d] disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-xs font-semibold text-fg-on-accent transition hover:bg-accent-hover disabled:opacity-50"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Create
