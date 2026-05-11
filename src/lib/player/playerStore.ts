@@ -21,8 +21,22 @@ export type PlayerState = {
 };
 
 const STORAGE_KEY = "campusstream:active-player";
+const INITIAL_STATE: PlayerState = { active: null, minimized: false };
 
-let state: PlayerState = { active: null, minimized: false };
+/**
+ * Hydration note: we intentionally do NOT rehydrate from sessionStorage at
+ * module load. That used to cause a server/client mismatch — the server
+ * renders with the empty initial state but the browser would have already
+ * restored state on module evaluation, painting a mini-player div that
+ * had no SSR counterpart.
+ *
+ * Instead, `usePlayerState` starts with the empty state (matching SSR) and
+ * runs restore() inside an effect after the first paint. Subscribers
+ * receive the restored state via the normal notify channel.
+ */
+
+let state: PlayerState = INITIAL_STATE;
+let restored = false;
 const listeners = new Set<Listener>();
 
 const persist = (): void => {
@@ -34,21 +48,22 @@ const persist = (): void => {
   window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 };
 
-const restore = (): void => {
+const restoreFromStorage = (): void => {
   if (typeof window === "undefined") return;
+  if (restored) return;
+  restored = true;
   const raw = window.sessionStorage.getItem(STORAGE_KEY);
   if (!raw) return;
   try {
     const parsed = JSON.parse(raw) as PlayerState;
-    if (parsed && typeof parsed === "object") {
+    if (parsed && typeof parsed === "object" && parsed.active) {
       state = parsed;
+      listeners.forEach((listener) => listener(state));
     }
   } catch {
     // ignore
   }
 };
-
-restore();
 
 const notify = (): void => {
   listeners.forEach((listener) => listener(state));
@@ -80,7 +95,12 @@ export const closePlayer = (): void => {
 };
 
 export const usePlayerState = (): PlayerState => {
-  const [snapshot, setSnapshot] = useState<PlayerState>(state);
-  useEffect(() => subscribe(setSnapshot), []);
+  // Always start with the SSR-safe empty state so client and server agree
+  // on the initial render.
+  const [snapshot, setSnapshot] = useState<PlayerState>(INITIAL_STATE);
+  useEffect(() => {
+    restoreFromStorage();
+    return subscribe(setSnapshot);
+  }, []);
   return snapshot;
 };
