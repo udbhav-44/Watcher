@@ -191,16 +191,29 @@ export const StreamingPlayer = ({
         <iframe
           src={src}
           /*
-           * Sandbox tokens are deliberately tight. We allow scripts +
-           * same-origin (required for the embed's video player) and forms
-           * + presentation (for fullscreen handoff). We intentionally OMIT
-           * `allow-top-navigation`, `allow-popups`, `allow-modals`, and
-           * `allow-popups-to-escape-sandbox` so ad scripts inside the
-           * embed cannot redirect the parent tab, open pop-unders, or
-           * pop new tabs. This is the single biggest mitigation for the
-           * free aggregators' ad behavior.
+           * Sandbox notes. The free aggregators are picky:
+           *   - allow-scripts + allow-same-origin are required for their
+           *     video player to run and store its session.
+           *   - allow-popups is required for several providers (VidSrc,
+           *     MultiEmbed) which spawn the actual video host in a popup
+           *     window. Without it, playback never starts.
+           *   - allow-popups-to-escape-sandbox lets that popup unsandbox
+           *     itself so its own player can load. Same reason.
+           *   - allow-modals lets the embed show "click to play" prompts.
+           *
+           * What we intentionally OMIT:
+           *   - allow-top-navigation (+ allow-top-navigation-by-user-activation)
+           *     — this is the critical one. Without it, ad scripts inside
+           *     the embed cannot redirect the parent tab to a sketchy
+           *     destination, which is the single most jarring behavior
+           *     the user reported.
+           *
+           * Residual ad popups are mitigated by the browser's built-in
+           * popup blocker (which still applies even with allow-popups for
+           * non-gesture popups) plus the uBlock Origin recommendation in
+           * the UI.
            */
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-modals"
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           allowFullScreen
           referrerPolicy="no-referrer"

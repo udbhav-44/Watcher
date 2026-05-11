@@ -185,9 +185,8 @@ export const ServerTogglePlayer = ({
           <p className="inline-flex items-start gap-1.5 text-fg-muted">
             <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
             <span>
-              Embeds are sandboxed — they can&apos;t redirect this tab or
-              open pop-unders. For pop-ups inside the player frame, install
-              {" "}
+              Embeds are sandboxed — they can&apos;t redirect this tab. For
+              residual ad pop-ups, install{" "}
               <a
                 href="https://ublockorigin.com"
                 target="_blank"
