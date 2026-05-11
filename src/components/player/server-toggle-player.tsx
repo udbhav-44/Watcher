@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink, ShieldCheck } from "lucide-react";
 
 import { StreamingPlayer } from "@/components/player/StreamingPlayer";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,19 @@ export type PlayableProvider = {
   id: string;
   label: string;
   url: string;
+  adQuality?: "low" | "medium" | "heavy";
+};
+
+const AD_QUALITY_DOT: Record<"low" | "medium" | "heavy", string> = {
+  low: "bg-success",
+  medium: "bg-warning",
+  heavy: "bg-danger"
+};
+
+const AD_QUALITY_LABEL: Record<"low" | "medium" | "heavy", string> = {
+  low: "Lighter ads",
+  medium: "Moderate ads",
+  heavy: "Heavy ads"
 };
 
 type Props = {
@@ -140,45 +153,73 @@ export const ServerTogglePlayer = ({
         <div className="flex flex-wrap gap-2">
           {providers.map((entry) => {
             const isActive = entry.id === active.id;
+            const quality = entry.adQuality ?? "medium";
             return (
               <button
                 key={entry.id}
                 type="button"
                 onClick={() => selectProvider(entry.id)}
                 aria-pressed={isActive}
+                title={AD_QUALITY_LABEL[quality]}
                 className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition",
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition",
                   isActive
                     ? "border-accent/50 bg-accent-soft text-accent"
                     : "border-border bg-fg/[0.04] text-fg-muted hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
                 )}
               >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    AD_QUALITY_DOT[quality]
+                  )}
+                />
                 {entry.label}
               </button>
             );
           })}
         </div>
 
-        <p className="text-xs text-fg-faint">
-          {mediaType === "tv"
-            ? "Episode embed quality varies by source. Try the next server if playback stalls or shows no sources."
-            : "Try the next server if playback stalls. Each source aggregates a different upstream catalog."}
-          {externalUrl && (
-            <>
+        <div className="space-y-1.5 text-xs">
+          <p className="inline-flex items-start gap-1.5 text-fg-muted">
+            <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
+            <span>
+              Embeds are sandboxed — they can&apos;t redirect this tab or
+              open pop-unders. For pop-ups inside the player frame, install
               {" "}
               <a
-                href={externalUrl}
+                href="https://ublockorigin.com"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-0.5 text-accent hover:underline"
+                className="text-accent hover:underline"
               >
-                {externalLabel}
-                <ExternalLink className="h-3 w-3" />
+                uBlock Origin
               </a>
               .
-            </>
-          )}
-        </p>
+            </span>
+          </p>
+          <p className="text-fg-faint">
+            {mediaType === "tv"
+              ? "Episode availability varies by source. Try the next server if playback stalls."
+              : "Try the next server if playback stalls. Each source aggregates a different upstream catalog."}
+            {externalUrl && (
+              <>
+                {" "}
+                <a
+                  href={externalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-0.5 text-accent hover:underline"
+                >
+                  {externalLabel}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                .
+              </>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -190,9 +190,21 @@ export const StreamingPlayer = ({
         )}
         <iframe
           src={src}
+          /*
+           * Sandbox tokens are deliberately tight. We allow scripts +
+           * same-origin (required for the embed's video player) and forms
+           * + presentation (for fullscreen handoff). We intentionally OMIT
+           * `allow-top-navigation`, `allow-popups`, `allow-modals`, and
+           * `allow-popups-to-escape-sandbox` so ad scripts inside the
+           * embed cannot redirect the parent tab, open pop-unders, or
+           * pop new tabs. This is the single biggest mitigation for the
+           * free aggregators' ad behavior.
+           */
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
           allowFullScreen
-          referrerPolicy="origin"
+          referrerPolicy="no-referrer"
+          loading="lazy"
           className="aspect-video w-full rounded-lg border border-border bg-black"
           title="Campus stream player"
           onLoad={() => {

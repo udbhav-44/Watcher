@@ -4,13 +4,15 @@ import { isTvTitleId } from "@/lib/catalog/titleId";
 import {
   embedProviders,
   type EmbedProvider,
-  type EmbedProviderId
+  type EmbedProviderId,
+  type ProviderAdQuality
 } from "./providers";
 
 export type ResolvedProvider = {
   id: EmbedProviderId;
   label: string;
   url: string;
+  adQuality: ProviderAdQuality;
 };
 
 const knownTmdbByImdb: Record<string, string> = {
@@ -71,7 +73,12 @@ const buildForProvider = (
     ? provider.tvUrl(tmdbId, options.season, options.episode)
     : provider.movieUrl(tmdbId);
   if (!url) return null;
-  return { id: provider.id, label: provider.label, url };
+  return {
+    id: provider.id,
+    label: provider.label,
+    url,
+    adQuality: provider.adQuality
+  };
 };
 
 /**

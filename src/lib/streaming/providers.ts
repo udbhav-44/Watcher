@@ -26,6 +26,8 @@ export type EmbedProviderId =
   | "multiembed"
   | "vidsrc-to";
 
+export type ProviderAdQuality = "low" | "medium" | "heavy";
+
 export type EmbedProvider = {
   id: EmbedProviderId;
   label: string;
@@ -33,41 +35,57 @@ export type EmbedProvider = {
   movieUrl: (tmdbId: string) => string;
   /** Build a TV episode embed URL. */
   tvUrl: (tmdbId: string, season: number, episode: number) => string;
+  /**
+   * Empirical ad behavior. Used to rank providers by default and to show a
+   * quality dot in the UI. None of these are ad-free — uBlock Origin in
+   * the browser is the recommended companion.
+   */
+  adQuality: ProviderAdQuality;
 };
 
 const VIDKING_BASE = env.NEXT_PUBLIC_VIDKING_BASE.replace(/\/$/, "");
 
+/**
+ * Ordered by ad-quality first, then by historical reliability. The watch
+ * pages always present this order; the user's last manual choice is
+ * persisted client-side and overrides the default.
+ */
 export const embedProviders: EmbedProvider[] = [
-  {
-    id: "vidking",
-    label: "Vidking",
-    movieUrl: (id) => `${VIDKING_BASE}/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `${VIDKING_BASE}/embed/tv/${id}/${s}/${e}`
-  },
   {
     id: "vidsrc-cc",
     label: "VidSrc",
     movieUrl: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`
+    tvUrl: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
+    adQuality: "low"
   },
   {
     id: "embedsu",
     label: "Embed.su",
     movieUrl: (id) => `https://embed.su/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`
+    tvUrl: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`,
+    adQuality: "low"
+  },
+  {
+    id: "vidking",
+    label: "Vidking",
+    movieUrl: (id) => `${VIDKING_BASE}/embed/movie/${id}`,
+    tvUrl: (id, s, e) => `${VIDKING_BASE}/embed/tv/${id}/${s}/${e}`,
+    adQuality: "medium"
+  },
+  {
+    id: "vidsrc-to",
+    label: "VidSrc.to",
+    movieUrl: (id) => `https://vidsrc.to/embed/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
+    adQuality: "medium"
   },
   {
     id: "multiembed",
     label: "MultiEmbed",
     movieUrl: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
     tvUrl: (id, s, e) =>
-      `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
-  },
-  {
-    id: "vidsrc-to",
-    label: "VidSrc.to",
-    movieUrl: (id) => `https://vidsrc.to/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`
+      `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
+    adQuality: "heavy"
   }
 ];
 
