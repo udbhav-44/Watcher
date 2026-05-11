@@ -67,7 +67,7 @@ export const ProfileAvatar = (): JSX.Element => {
     <Link
       href="/me/collections"
       aria-label={`Profile ${profileKey}`}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-sm font-semibold text-black transition hover:border-white/30 focus-visible:ring-2 focus-visible:ring-[#f2c46d]/70 focus-visible:outline-none"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-fg/[0.04] text-sm font-semibold text-black transition hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-none"
       style={{ backgroundColor: color }}
     >
       {initial}

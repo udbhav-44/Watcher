@@ -3,11 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { FolderOpen, Play, Trash2 } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PosterSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import { detailHrefFor } from "@/lib/catalog/titleId";
+import type { MovieCard as MovieCardType } from "@/lib/types";
 
 type Item = {
   id: string;
@@ -16,20 +18,33 @@ type Item = {
   addedAt: string;
 };
 
-type Movie = {
-  titleId: string;
-  title: string;
-  synopsis?: string | null;
-  posterUrl?: string | null;
-};
-
 type Props = {
   slug: string;
   items: Item[];
 };
 
+const placeholderMovie = (titleId: string): MovieCardType => ({
+  id: titleId,
+  titleId,
+  title: `Saved title (${titleId})`,
+  synopsis: "Details are not available right now.",
+  posterUrl: null,
+  backdropUrl: null,
+  releaseYear: null,
+  durationMinutes: null,
+  voteAverage: null,
+  maturityRating: null,
+  cast: [],
+  castDetails: [],
+  director: null,
+  numberOfSeasons: null,
+  numberOfEpisodes: null,
+  playableUrl: "",
+  genres: []
+});
+
 export const CollectionItemsGrid = ({ slug, items }: Props): JSX.Element => {
-  const [enriched, setEnriched] = useState<Movie[] | null>(null);
+  const [enriched, setEnriched] = useState<MovieCardType[] | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const toast = useToast();
 
@@ -37,19 +52,16 @@ export const CollectionItemsGrid = ({ slug, items }: Props): JSX.Element => {
     let cancelled = false;
     const load = async (): Promise<void> => {
       const requests = items.map(async (entry) => {
-        const response = await fetch(`/api/movies/${entry.titleId}`, {
-          credentials: "same-origin"
-        });
-        if (!response.ok) {
-          return {
-            titleId: entry.titleId,
-            title: `Saved title (${entry.titleId})`,
-            synopsis: "Details are not available right now.",
-            posterUrl: null
-          } satisfies Movie;
+        try {
+          const response = await fetch(`/api/movies/${entry.titleId}`, {
+            credentials: "same-origin"
+          });
+          if (!response.ok) return placeholderMovie(entry.titleId);
+          const data = (await response.json()) as { movie?: MovieCardType };
+          return data.movie ?? placeholderMovie(entry.titleId);
+        } catch {
+          return placeholderMovie(entry.titleId);
         }
-        const data = (await response.json()) as { movie: Movie };
-        return data.movie;
       });
       const result = await Promise.all(requests);
       if (!cancelled) setEnriched(result);
@@ -70,14 +82,20 @@ export const CollectionItemsGrid = ({ slug, items }: Props): JSX.Element => {
       return;
     }
     setHidden((prev) => new Set(prev).add(titleId));
-    toast.info(`Removed “${label}”`);
+    toast.info(`Removed "${label}"`);
   };
 
-  if (!enriched) {
+  if (enriched === null) {
     return (
-      <Card>
-        <p className="text-sm text-white/68">Loading items...</p>
-      </Card>
+      <div
+        className="grid gap-4"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))" }}
+        aria-busy="true"
+      >
+        {Array.from({ length: 8 }).map((_, idx) => (
+          <PosterSkeleton key={idx} />
+        ))}
+      </div>
     );
   }
 
@@ -85,48 +103,75 @@ export const CollectionItemsGrid = ({ slug, items }: Props): JSX.Element => {
 
   if (visible.length === 0) {
     return (
-      <Card>
-        <p className="text-sm text-white/68">
-          This collection is empty. Add titles from any detail page.
-        </p>
-      </Card>
+      <EmptyState
+        icon={<FolderOpen className="h-5 w-5" />}
+        title="This collection is empty"
+        description="Save titles to this collection from any detail page using the Save to... menu."
+        action={
+          <Link
+            href="/browse"
+            className="inline-flex items-center gap-1 rounded-full bg-accent px-4 py-2 text-sm font-medium text-fg-on-accent transition hover:bg-accent-hover"
+          >
+            Find titles to add
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div
+      className="grid gap-4"
+      style={{ gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))" }}
+    >
       {visible.map((movie) => (
-        <Card key={movie.titleId} className="grid grid-cols-[72px_1fr] gap-3">
-          <div className="relative h-[102px] overflow-hidden rounded-md bg-white/5">
-            {movie.posterUrl ? (
-              <Image
-                src={movie.posterUrl}
-                alt={movie.title}
-                fill
-                className="object-cover"
-                sizes="72px"
-              />
-            ) : (
-              <div className="h-full w-full bg-[#1a1a1a]" />
-            )}
-          </div>
-          <div className="flex flex-col justify-between gap-2">
-            <Link href={detailHrefFor(movie.titleId)} className="space-y-1">
-              <p className="font-semibold">{movie.title}</p>
-              <p className="line-clamp-2 text-sm text-white/68">
-                {movie.synopsis}
+        <div
+          key={movie.titleId}
+          className="group relative w-full overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition hover:border-border-strong"
+        >
+          <Link
+            href={detailHrefFor(movie.titleId)}
+            className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+          >
+            <div className="relative aspect-[2/3] w-full overflow-hidden bg-surface-3">
+              {movie.posterUrl ? (
+                <Image
+                  src={movie.posterUrl}
+                  alt={movie.title}
+                  fill
+                  className="object-cover transition duration-300 group-hover:scale-[1.04]"
+                  sizes="(max-width:768px) 50vw, 20vw"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center px-4 text-center text-xs text-fg-faint">
+                  Artwork unavailable
+                </div>
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90" />
+              <div className="absolute bottom-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-fg text-fg-on-accent opacity-0 shadow-lift transition group-focus-within:opacity-100 group-hover:opacity-100">
+                <Play className="h-4 w-4 fill-current" />
+              </div>
+            </div>
+            <div className="space-y-1 p-3">
+              <p className="line-clamp-1 text-sm font-medium text-fg">
+                {movie.title}
               </p>
-            </Link>
-            <button
-              type="button"
-              onClick={() => remove(movie.titleId, movie.title)}
-              className="inline-flex w-fit items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-1 text-xs text-white/60 transition hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-200"
-            >
-              <Trash2 className="h-3 w-3" />
-              Remove
-            </button>
-          </div>
-        </Card>
+              {movie.synopsis && (
+                <p className="line-clamp-2 text-xs text-fg-faint">
+                  {movie.synopsis}
+                </p>
+              )}
+            </div>
+          </Link>
+          <button
+            type="button"
+            onClick={() => remove(movie.titleId, movie.title)}
+            aria-label={`Remove ${movie.title} from collection`}
+            className="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-overlay text-fg-muted opacity-0 backdrop-blur transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:border-danger/40 hover:bg-danger/15 hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       ))}
     </div>
   );

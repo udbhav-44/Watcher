@@ -52,7 +52,9 @@ export const ProfileSwitcher = (): JSX.Element => {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-white/56">Profile</span>
+      <span className="text-xs tracking-wide text-fg-faint uppercase">
+        Profile
+      </span>
       {profiles.map((profile) => (
         <Button
           key={profile.key}

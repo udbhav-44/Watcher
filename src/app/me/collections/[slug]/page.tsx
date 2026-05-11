@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { CollectionItemsGrid } from "@/components/profile/collection-items-grid";
-import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { isDbEnabled, prisma } from "@/lib/db";
 import { ensureDefaultCollection } from "@/lib/personalization/collections";
 import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
@@ -16,11 +17,10 @@ export default async function CollectionDetailPage({
 }: Props): Promise<JSX.Element> {
   if (!isDbEnabled()) {
     return (
-      <Card>
-        <p className="text-sm text-white/68">
-          Collections are unavailable while the database is offline.
-        </p>
-      </Card>
+      <EmptyState
+        title="Collections are offline"
+        description="The database is currently unavailable. Try again in a moment."
+      />
     );
   }
 
@@ -38,16 +38,17 @@ export default async function CollectionDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <div>
-          <Link
-            href="/me/collections"
-            className="text-xs text-[#f2c46d] hover:underline"
-          >
-            ← All collections
-          </Link>
-          <h1 className="text-3xl font-semibold">{collection.name}</h1>
-          <p className="text-sm text-white/62">
+      <div>
+        <Link
+          href="/me/collections"
+          className="inline-flex items-center gap-1 text-xs text-fg-muted transition hover:text-fg"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          All collections
+        </Link>
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-3xl font-semibold text-fg">{collection.name}</h1>
+          <p className="text-sm text-fg-faint tabular-nums">
             {collection.items.length} title
             {collection.items.length === 1 ? "" : "s"}
           </p>
