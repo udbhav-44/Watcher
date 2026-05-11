@@ -55,27 +55,29 @@ export const UpNextRail = (): JSX.Element | null => {
   if (!entries || entries.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" aria-labelledby="up-next-heading">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-xl font-medium">Up next on TV</h2>
+        <h2 id="up-next-heading" className="text-xl font-medium text-fg">
+          Up next on TV
+        </h2>
         <Link
           href="/calendar"
-          className="text-xs text-[#f2c46d] hover:underline"
+          className="text-xs text-accent hover:underline"
         >
           View calendar
         </Link>
       </div>
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+      <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {entries.map((entry) => {
           const watchHref =
             `${watchHrefFor(entry.titleId)}?s=${entry.season}&e=${entry.episode}` as Route;
           return (
             <div
               key={`${entry.titleId}-${entry.season}-${entry.episode}`}
-              className="surface-panel min-w-[280px] overflow-hidden rounded-lg"
+              className="min-w-[280px] overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card"
             >
               <Link href={watchHref} className="block">
-                <div className="relative aspect-video w-full bg-[#1a1a1a]">
+                <div className="relative aspect-video w-full bg-surface-3">
                   {entry.episodeStillUrl ? (
                     <Image
                       src={entry.episodeStillUrl}
@@ -93,35 +95,39 @@ export const UpNextRail = (): JSX.Element | null => {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full bg-[#1a1a1a]" />
+                    <div className="h-full w-full bg-surface-3" />
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-3 text-white">
-                    <p className="text-xs tracking-[0.18em] text-[#f2c46d] uppercase">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-3 text-fg">
+                    <p className="text-xs tracking-[0.18em] text-accent uppercase">
                       {reasonLabel(entry.reason)}
                     </p>
                     <p className="text-sm font-medium">{entry.title}</p>
-                    <p className="text-xs text-white/70">
-                      S{entry.season} • E{entry.episode}
-                      {entry.episodeName ? ` · ${entry.episodeName}` : ""}
+                    <p className="text-xs text-fg-muted tabular-nums">
+                      S{entry.season}  ·  E{entry.episode}
+                      {entry.episodeName ? `  ·  ${entry.episodeName}` : ""}
                     </p>
                   </div>
                   {entry.progressPercent > 1 && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
                       <div
-                        className="h-full bg-[#f2c46d]"
-                        style={{ width: `${Math.min(100, entry.progressPercent)}%` }}
+                        className="h-full bg-accent"
+                        style={{
+                          width: `${Math.min(100, entry.progressPercent)}%`
+                        }}
                       />
                     </div>
                   )}
                 </div>
               </Link>
-              <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-white/60">
-                <Link href={detailHrefFor(entry.titleId)} className="hover:underline">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-muted">
+                <Link
+                  href={detailHrefFor(entry.titleId)}
+                  className="hover:text-fg hover:underline"
+                >
                   Series details
                 </Link>
-                <span>
-                  {entry.watchedEpisodes}/{entry.totalEpisodes} watched ·{" "}
-                  {entry.completionPercent}%
+                <span className="tabular-nums">
+                  {entry.watchedEpisodes}/{entry.totalEpisodes} watched  ·  {entry.completionPercent}%
                 </span>
               </div>
             </div>

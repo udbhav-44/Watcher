@@ -45,41 +45,43 @@ export const PersonalizedRail = (): JSX.Element | null => {
   if (!data || !data.basis || data.recommendations.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" aria-labelledby="personalized-rail-heading">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-xl font-medium">
+        <h2 id="personalized-rail-heading" className="text-xl font-medium text-fg">
           Because you rated{" "}
-          <span className="text-[#f2c46d]">{data.basis.title}</span>
+          <span className="text-accent">{data.basis.title}</span>
         </h2>
-        <span className="text-xs text-white/45">
+        <span className="text-xs text-fg-faint tabular-nums">
           {data.recommendations.length} suggestions
         </span>
       </div>
-      <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
+      <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {data.recommendations.map((entry) => (
           <Link
             key={entry.titleId}
             href={detailHrefFor(entry.titleId)}
-            className="group w-[160px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#121212]"
+            className="group w-[160px] shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70 outline-none"
           >
-            <div className="relative aspect-[2/3] w-full bg-[#1a1a1a]">
+            <div className="relative aspect-[2/3] w-full bg-surface-3">
               {entry.posterUrl ? (
                 <Image
                   src={entry.posterUrl}
                   alt={entry.title}
                   fill
-                  className="object-cover transition group-hover:scale-105"
+                  className="object-cover transition duration-300 group-hover:scale-[1.04]"
                   sizes="160px"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-white/40">
+                <div className="flex h-full w-full items-center justify-center text-xs text-fg-faint">
                   Artwork unavailable
                 </div>
               )}
             </div>
             <div className="space-y-1 p-2">
-              <p className="line-clamp-1 text-sm font-medium">{entry.title}</p>
-              <p className="text-xs text-white/56">
+              <p className="line-clamp-1 text-sm font-medium text-fg">
+                {entry.title}
+              </p>
+              <p className="text-xs text-fg-faint tabular-nums">
                 {entry.releaseYear ?? "TBA"}
               </p>
             </div>
