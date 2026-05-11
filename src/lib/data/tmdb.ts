@@ -134,26 +134,61 @@ export const tvGenreMap: Record<number, string> = {
   37: "Western"
 };
 
+/*
+ * Network-resilient TMDb fetcher.
+ *
+ * Flaky networks (campus, captive portals, weak VPNs) routinely reset TLS
+ * mid-handshake, so a single-shot fetch produces empty rails / 404s on
+ * detail pages. We retry with exponential backoff on every transient
+ * failure (connection reset, timeout, TMDb 5xx, TMDb 429) before falling
+ * back to `null` so callers can use their cache.
+ *
+ * 4xx errors that aren't 429 are not retried — those are deterministic
+ * (bad key, bad id) and retrying just wastes time.
+ */
+const TMDB_RETRYABLE_STATUS = new Set<number>([408, 425, 429, 500, 502, 503, 504]);
+const TMDB_MAX_ATTEMPTS = 4;
+const TMDB_BASE_BACKOFF_MS = 300;
+const TMDB_TIMEOUT_MS = 10_000;
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
 export const tmdbFetch = async <T>(
   path: string,
   params: Record<string, string> = {}
 ): Promise<T | null> => {
   if (!env.TMDB_API_KEY) return null;
-  try {
-    const url = new URL(`${TMDB_API_BASE}${path}`);
-    url.searchParams.set("api_key", env.TMDB_API_KEY);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) url.searchParams.set(key, value);
-    });
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 1800 },
-      signal: AbortSignal.timeout(8000)
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
-  } catch {
-    return null;
+
+  const url = new URL(`${TMDB_API_BASE}${path}`);
+  url.searchParams.set("api_key", env.TMDB_API_KEY);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value);
+  });
+  const target = url.toString();
+
+  for (let attempt = 1; attempt <= TMDB_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(target, {
+        next: { revalidate: 1800 },
+        signal: AbortSignal.timeout(TMDB_TIMEOUT_MS),
+        headers: { accept: "application/json" }
+      });
+      if (response.ok) {
+        return (await response.json()) as T;
+      }
+      if (!TMDB_RETRYABLE_STATUS.has(response.status)) {
+        return null;
+      }
+    } catch {
+      // Network-level failure (ECONNRESET, timeout, DNS). Fall through to retry.
+    }
+    if (attempt < TMDB_MAX_ATTEMPTS) {
+      const jitter = Math.floor(Math.random() * 150);
+      await sleep(TMDB_BASE_BACKOFF_MS * 2 ** (attempt - 1) + jitter);
+    }
   }
+  return null;
 };
 
 export const toImageUrl = (
