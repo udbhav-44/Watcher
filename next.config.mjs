@@ -27,8 +27,10 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig = {
+  output: "standalone",
   experimental: {
-    typedRoutes: true
+    typedRoutes: true,
+    instrumentationHook: true
   },
   async headers() {
     return [
