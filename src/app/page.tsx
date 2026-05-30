@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 
 import { HeroSection } from "@/components/home/hero-section";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { MovieRailsSection } from "@/components/home/movie-rails-section";
 import { TvRailsSection } from "@/components/home/tv-rails-section";
 import { ContinueWatching } from "@/components/profile/continue-watching";
