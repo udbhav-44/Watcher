@@ -19,12 +19,7 @@
 
 import { env } from "@/lib/config/env";
 
-export type EmbedProviderId =
-  | "vidking"
-  | "vidsrc-cc"
-  | "embedsu"
-  | "multiembed"
-  | "vidsrc-to";
+export type EmbedProviderId = "vidking";
 
 export type ProviderAdQuality = "low" | "medium" | "heavy";
 
@@ -52,40 +47,11 @@ const VIDKING_BASE = env.NEXT_PUBLIC_VIDKING_BASE.replace(/\/$/, "");
  */
 export const embedProviders: EmbedProvider[] = [
   {
-    id: "vidsrc-cc",
-    label: "VidSrc",
-    movieUrl: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
-    adQuality: "low"
-  },
-  {
-    id: "embedsu",
-    label: "Embed.su",
-    movieUrl: (id) => `https://embed.su/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`,
-    adQuality: "low"
-  },
-  {
     id: "vidking",
     label: "Vidking",
     movieUrl: (id) => `${VIDKING_BASE}/embed/movie/${id}`,
     tvUrl: (id, s, e) => `${VIDKING_BASE}/embed/tv/${id}/${s}/${e}`,
-    adQuality: "medium"
-  },
-  {
-    id: "vidsrc-to",
-    label: "VidSrc.to",
-    movieUrl: (id) => `https://vidsrc.to/embed/movie/${id}`,
-    tvUrl: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
-    adQuality: "medium"
-  },
-  {
-    id: "multiembed",
-    label: "MultiEmbed",
-    movieUrl: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-    tvUrl: (id, s, e) =>
-      `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
-    adQuality: "heavy"
+    adQuality: "low"
   }
 ];
 
