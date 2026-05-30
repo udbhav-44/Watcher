@@ -14,7 +14,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_ENABLE_ADMIN_DASHBOARD: z.enum(["true", "false"]).default("false"),
   ADMIN_INTERNAL_KEY: z.preprocess(emptyToUndefined, z.string().min(16).optional()),
   DATABASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  NEXT_PUBLIC_PLAY_HOST: z.string().url().default("https://www.playimdb.com"),
+  NEXT_PUBLIC_PLAY_HOST: z.string().url().default("https://www.playimdb.domains"),
   NEXT_PUBLIC_VIDKING_BASE: z.preprocess(emptyToUndefined, z.string().url().default("https://www.vidking.net")),
   TMDB_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   UPSTASH_REDIS_REST_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),

@@ -1,5 +1,5 @@
 const hostRules = [
-  "playimdb.com",
+  "playimdb.domains",
   "vidking.net"
 ] as const;
 
