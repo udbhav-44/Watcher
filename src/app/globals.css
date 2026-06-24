@@ -112,6 +112,17 @@ body::before {
   .text-pretty {
     text-wrap: pretty;
   }
+  .section-heading {
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--color-fg);
+  }
+  @media (min-width: 768px) {
+    .section-heading {
+      font-size: 1.25rem;
+    }
+  }
   .focus-ring {
     outline: none;
     box-shadow: 0 0 0 2px rgb(242 196 109 / 0.7);

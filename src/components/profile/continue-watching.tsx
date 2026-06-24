@@ -96,18 +96,13 @@ export const ContinueWatching = (): JSX.Element | null => {
   if (!items || items.length === 0) return null;
 
   return (
-    <section className="space-y-3" aria-labelledby="rail-continue-watching">
-      <div className="flex items-end justify-between gap-3">
-        <h2
-          id="rail-continue-watching"
-          className="text-xl font-medium text-fg"
-        >
-          Continue watching
-        </h2>
-        <span className="text-xs text-fg-faint tabular-nums">
-          {items.length} {items.length === 1 ? "title" : "titles"}
-        </span>
-      </div>
+    <section className="space-y-4" aria-labelledby="rail-continue-watching">
+      <h2
+        id="rail-continue-watching"
+        className="text-lg font-medium tracking-tight text-fg md:text-xl"
+      >
+        Continue watching
+      </h2>
       <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {items.map((item) => {
           const artwork = item.movie?.backdropUrl ?? item.movie?.posterUrl;

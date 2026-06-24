@@ -45,20 +45,26 @@ export const RailSkeleton = ({ count = 6 }: { count?: number }): JSX.Element => 
   </section>
 );
 
-export const HeroSkeleton = (): JSX.Element => (
+export const HeroSkeleton = ({
+  fullBleed = false
+}: {
+  fullBleed?: boolean;
+}): JSX.Element => (
   <div
-    className="relative min-h-[520px] overflow-hidden rounded-xl border border-border bg-surface"
+    className={cn(
+      "relative min-h-[min(78vh,720px)] overflow-hidden bg-surface",
+      !fullBleed && "rounded-xl border border-border"
+    )}
     aria-busy="true"
   >
     <Skeleton className="absolute inset-0 rounded-none" />
-    <div className="relative flex min-h-[520px] flex-col justify-end gap-4 p-5 md:p-10">
-      <Skeleton className="h-4 w-24" />
+    <div className="relative mx-auto flex min-h-[min(78vh,720px)] max-w-7xl flex-col justify-end gap-4 px-4 pb-12 pt-28 md:px-6 md:pb-16">
       <Skeleton className="h-10 w-2/3" />
       <Skeleton className="h-3 w-1/3" />
-      <Skeleton className="h-16 w-1/2" />
+      <Skeleton className="hidden h-14 w-1/2 md:block" />
       <div className="flex gap-3">
-        <Skeleton className="h-12 w-28 rounded-full" />
         <Skeleton className="h-12 w-32 rounded-full" />
+        <Skeleton className="h-12 w-28 rounded-full" />
       </div>
     </div>
   </div>

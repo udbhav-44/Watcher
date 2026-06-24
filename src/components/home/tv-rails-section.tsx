@@ -10,9 +10,9 @@ export const TvRailsSection = async (): Promise<JSX.Element> => {
   return (
     <div className="space-y-10">
       {onTheAir.length > 0 && (
-        <MovieRail title="On the air" movies={onTheAir} />
+        <MovieRail title="On the air" movies={onTheAir.slice(0, 12)} />
       )}
-      {tvRails.map((rail) => (
+      {tvRails.slice(0, 2).map((rail) => (
         <MovieRail
           key={`tv-${rail.slug}`}
           title={rail.label}

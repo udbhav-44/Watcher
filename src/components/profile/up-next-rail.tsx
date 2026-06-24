@@ -55,18 +55,10 @@ export const UpNextRail = (): JSX.Element | null => {
   if (!entries || entries.length === 0) return null;
 
   return (
-    <section className="space-y-3" aria-labelledby="up-next-heading">
-      <div className="flex items-baseline justify-between">
-        <h2 id="up-next-heading" className="text-xl font-medium text-fg">
-          Up next on TV
-        </h2>
-        <Link
-          href="/calendar"
-          className="text-xs text-accent hover:underline"
-        >
-          View calendar
-        </Link>
-      </div>
+    <section className="space-y-4" aria-labelledby="up-next-heading">
+      <h2 id="up-next-heading" className="text-lg font-medium tracking-tight text-fg md:text-xl">
+        Up next on TV
+      </h2>
       <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {entries.map((entry) => {
           const watchHref =
@@ -119,15 +111,15 @@ export const UpNextRail = (): JSX.Element | null => {
                   )}
                 </div>
               </Link>
-              <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-muted">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-faint">
                 <Link
                   href={detailHrefFor(entry.titleId)}
-                  className="hover:text-fg hover:underline"
+                  className="transition hover:text-fg"
                 >
-                  Series details
+                  Details
                 </Link>
                 <span className="tabular-nums">
-                  {entry.watchedEpisodes}/{entry.totalEpisodes} watched  ·  {entry.completionPercent}%
+                  {entry.completionPercent}% complete
                 </span>
               </div>
             </div>

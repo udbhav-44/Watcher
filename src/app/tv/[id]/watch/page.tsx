@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
@@ -100,7 +99,7 @@ export default async function TvWatchPage({
   }`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <ActivePlayerBinder
         titleId={show.titleId}
         title={show.title}
@@ -112,23 +111,8 @@ export default async function TvWatchPage({
         episodeName={currentEpisode?.name ?? null}
       />
 
-      <div className="flex items-center justify-between gap-2">
-        <Link
-          href={`/tv/${show.titleId}`}
-          className="inline-flex items-center gap-1 text-xs text-fg-muted transition hover:text-fg"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to series
-        </Link>
-        {show.numberOfSeasons && (
-          <span className="text-xs text-fg-faint tabular-nums">
-            {show.numberOfSeasons} season{show.numberOfSeasons === 1 ? "" : "s"}
-          </span>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-4">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-5">
           <ServerTogglePlayer
             titleId={show.titleId}
             poster={show.backdropUrl}
@@ -138,19 +122,25 @@ export default async function TvWatchPage({
             mediaType="tv"
             episodeLabel={episodeLabel}
           />
-          <div className="space-y-1">
-            <h1 className="text-balance text-3xl font-semibold text-fg md:text-4xl">
-              {show.title}
-            </h1>
-            <p className="text-sm text-fg-muted tabular-nums">
-              {episodeLabel}
-            </p>
-            {currentEpisode?.overview && (
-              <p className="max-w-prose text-pretty pt-2 text-sm leading-7 text-fg-muted">
-                {currentEpisode.overview}
-              </p>
-            )}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <h1 className="text-balance text-2xl font-semibold tracking-tight text-fg md:text-3xl">
+                {show.title}
+              </h1>
+              <p className="text-sm text-fg-muted tabular-nums">{episodeLabel}</p>
+            </div>
+            <Link
+              href={`/tv/${show.titleId}`}
+              className="shrink-0 text-xs text-fg-faint transition hover:text-fg"
+            >
+              Series
+            </Link>
           </div>
+          {currentEpisode?.overview && (
+            <p className="max-w-prose text-pretty text-sm leading-7 text-fg-muted">
+              {currentEpisode.overview}
+            </p>
+          )}
           <TvWatchSession
             titleId={show.titleId}
             season={season}

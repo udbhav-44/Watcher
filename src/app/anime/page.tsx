@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import { AnimeCard } from "@/components/anime/anime-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getRecentAnimeCards } from "@/lib/data/anime";
 
 type Props = {
@@ -17,16 +18,28 @@ export default async function AnimeIndexPage({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <p className="text-xs tracking-[0.22em] text-accent uppercase">
-          Catalog
-        </p>
-        <h1 className="text-3xl font-semibold text-fg">Anime</h1>
-        <p className="max-w-prose text-pretty text-sm text-fg-muted">
-          Recent releases from Anikoto, streamed via MegaPlay. Sub and dub where
-          available.
-        </p>
-      </div>
+      <header className="relative overflow-hidden rounded-xl border border-border bg-surface-2">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            background:
+              "linear-gradient(120deg, rgb(143 183 255 / 0.18) 0%, transparent 45%, rgb(242 196 109 / 0.08) 100%)"
+          }}
+          aria-hidden
+        />
+        <div className="relative space-y-2 px-6 py-8 md:px-8">
+          <p className="text-[10px] tracking-[0.22em] text-info uppercase">
+            Anime
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-fg md:text-4xl">
+            Latest episodes
+          </h1>
+          <p className="max-w-prose text-pretty text-sm text-fg-muted">
+            Sub and dub where available — same watch experience as the rest of
+            CampusStream.
+          </p>
+        </div>
+      </header>
 
       {items.length > 0 ? (
         <div
@@ -40,10 +53,10 @@ export default async function AnimeIndexPage({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-fg-muted">
-          Could not load anime catalog. The Anikoto API may be temporarily
-          unavailable.
-        </p>
+        <EmptyState
+          title="Catalog unavailable"
+          description="The anime feed may be temporarily down. Try again in a few minutes."
+        />
       )}
 
       {totalPages > 1 && (
@@ -51,18 +64,18 @@ export default async function AnimeIndexPage({
           {page > 1 ? (
             <Link
               href={`/anime?page=${page - 1}` as Route}
-              className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs text-fg-muted transition hover:border-border-strong hover:text-fg"
+              className="inline-flex h-9 items-center rounded-full border border-border px-4 text-xs text-fg-muted transition hover:border-border-strong hover:text-fg"
             >
               Previous
             </Link>
           ) : null}
           <span className="text-xs text-fg-faint tabular-nums">
-            Page {page} of {totalPages}
+            {page} / {totalPages}
           </span>
           {page < totalPages ? (
             <Link
               href={`/anime?page=${page + 1}` as Route}
-              className="inline-flex h-8 items-center rounded-full border border-border px-3 text-xs text-fg-muted transition hover:border-border-strong hover:text-fg"
+              className="inline-flex h-9 items-center rounded-full border border-border px-4 text-xs text-fg-muted transition hover:border-border-strong hover:text-fg"
             >
               Next
             </Link>

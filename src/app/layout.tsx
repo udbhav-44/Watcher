@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
+import { AppShell } from "@/components/layout/app-shell";
 import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
-import { Navbar } from "@/components/layout/navbar";
-import { PageTransition } from "@/components/layout/page-transition";
 import { ServiceWorkerRegister } from "@/components/layout/service-worker-register";
 import { MiniPlayerHost } from "@/components/player/mini-player";
 import { ToastProvider } from "@/components/ui/toast";
@@ -31,10 +30,7 @@ export default function RootLayout({
         </a>
         <ToastProvider>
           <KeyboardShortcuts />
-          <Navbar />
-          <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-6">
-            <PageTransition>{children}</PageTransition>
-          </main>
+          <AppShell>{children}</AppShell>
           <MiniPlayerHost />
           <ServiceWorkerRegister />
         </ToastProvider>

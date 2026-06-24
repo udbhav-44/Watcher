@@ -35,15 +35,9 @@ export default async function TvIndexPage({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <p className="text-xs tracking-[0.22em] text-accent uppercase">
-          Catalog
-        </p>
-        <h1 className="text-3xl font-semibold text-fg">TV shows</h1>
-        <p className="max-w-prose text-pretty text-sm text-fg-muted">
-          Series, mini-series, and seasons. Tap a chip to refine instantly.
-        </p>
-      </div>
+      <header className="space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight text-fg">TV</h1>
+      </header>
 
       <CatalogFilterChips base="/tv" scope="tv" filters={searchParams} />
 

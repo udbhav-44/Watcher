@@ -10,9 +10,9 @@ export const MovieRailsSection = async (): Promise<JSX.Element> => {
   return (
     <div className="space-y-10">
       {nowPlaying.length > 0 && (
-        <MovieRail title="In theaters now" movies={nowPlaying} />
+        <MovieRail title="In theaters now" movies={nowPlaying.slice(0, 12)} />
       )}
-      {movieRails.map((rail) => (
+      {movieRails.slice(0, 2).map((rail) => (
         <MovieRail
           key={`movie-${rail.slug}`}
           title={rail.label}

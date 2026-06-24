@@ -1,21 +1,8 @@
-import Link from "next/link";
-
 import { CatalogFilterChips } from "@/components/movies/catalog-filter-chips";
 import { MovieCard } from "@/components/movies/movie-card";
 import { MovieRail } from "@/components/movies/movie-rail";
 import { EmptyState } from "@/components/ui/empty-state";
 import { discoverMovies, getFeaturedRails } from "@/lib/data/movies";
-
-const QUICK_GENRES = [
-  "Action",
-  "Drama",
-  "Comedy",
-  "Sci-Fi",
-  "Thriller",
-  "Romance",
-  "Animation",
-  "Horror"
-];
 
 type Props = {
   searchParams: {
@@ -25,12 +12,6 @@ type Props = {
     sort?: "popularity" | "release_date" | "rating";
   };
 };
-
-const genreSlug = (name: string): string =>
-  name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 
 export default async function BrowsePage({
   searchParams
@@ -54,27 +35,9 @@ export default async function BrowsePage({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <p className="text-xs tracking-[0.22em] text-accent uppercase">
-          Catalog
-        </p>
-        <h1 className="text-3xl font-semibold text-fg">Movies</h1>
-        <p className="max-w-prose text-pretty text-sm text-fg-muted">
-          Browse by genre, era, and sort. Tap a chip to apply instantly.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {QUICK_GENRES.map((entry) => (
-          <Link
-            key={entry}
-            href={`/genre/${genreSlug(entry)}`}
-            className="rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
-          >
-            {entry}
-          </Link>
-        ))}
-      </div>
+      <header className="space-y-1">
+        <h1 className="text-3xl font-semibold tracking-tight text-fg">Movies</h1>
+      </header>
 
       <CatalogFilterChips base="/browse" scope="movie" filters={searchParams} />
 

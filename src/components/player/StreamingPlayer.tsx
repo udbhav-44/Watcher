@@ -10,6 +10,7 @@ type Props = {
   src: string;
   poster?: string | null;
   titleId?: string;
+  onEmbedLoad?: () => void;
 };
 
 const VOLUME_KEY = "campusstream:volume";
@@ -29,7 +30,8 @@ const formatTime = (seconds: number): string => {
 export const StreamingPlayer = ({
   src,
   poster,
-  titleId
+  titleId,
+  onEmbedLoad
 }: Props): JSX.Element => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const watchTickerRef = useRef<number | null>(null);
@@ -213,6 +215,7 @@ export const StreamingPlayer = ({
           onLoad={() => {
             setIframeLoading(false);
             setErrorMessage(null);
+            onEmbedLoad?.();
           }}
         />
         {errorMessage && (

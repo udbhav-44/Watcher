@@ -45,18 +45,8 @@ export const RecentSearches = (): JSX.Element | null => {
 
   return (
     <section className="space-y-3" aria-label="Recent searches">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-medium text-fg">Recent searches</h2>
-        <button
-          type="button"
-          onClick={clearAll}
-          className="inline-flex items-center gap-1 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-faint transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg"
-        >
-          <X className="h-3 w-3" /> Clear
-        </button>
-      </div>
       <div className="flex flex-wrap gap-2">
-        {searches.slice(0, 12).map((entry) => (
+        {searches.slice(0, 8).map((entry) => (
           <Link
             key={entry.id}
             href={`/search?q=${encodeURIComponent(entry.query)}`}
@@ -66,6 +56,13 @@ export const RecentSearches = (): JSX.Element | null => {
             {entry.query}
           </Link>
         ))}
+        <button
+          type="button"
+          onClick={clearAll}
+          className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-fg-faint transition hover:text-fg"
+        >
+          <X className="h-3 w-3" /> Clear
+        </button>
       </div>
     </section>
   );

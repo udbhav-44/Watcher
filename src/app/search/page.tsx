@@ -4,6 +4,7 @@ import { Search as SearchIcon, X } from "lucide-react";
 
 import { MovieCard } from "@/components/movies/movie-card";
 import { RecordSearch } from "@/components/profile/record-search";
+import { RecentSearches } from "@/components/profile/recent-searches";
 import { SearchAutocomplete } from "@/components/movies/search-autocomplete";
 import { EmptyState } from "@/components/ui/empty-state";
 import { searchMovies } from "@/lib/data/movies";
@@ -126,88 +127,85 @@ export default async function SearchPage({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <RecordSearch query={query} />
 
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-fg">Search</h1>
-        <p className="text-sm text-fg-muted">
-          Find a title, genre, or year. Filters apply instantly.
-        </p>
+      <div className="space-y-4">
+        <h1 className="text-3xl font-semibold tracking-tight text-fg">Search</h1>
+        <SearchAutocomplete initialQuery={query} />
+        <RecentSearches />
       </div>
 
-      <SearchAutocomplete initialQuery={query} />
-
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <ScopeFilter scope={scope} searchParams={searchParams} />
-        </div>
-
-        <FilterRow label="Genre">
-          <Chip
-            href={buildHref(searchParams, { genre: undefined })}
-            active={!searchParams.genre}
-          >
-            Any
-          </Chip>
-          {QUICK_GENRES.map((g) => (
-            <Chip
-              key={g}
-              href={buildHref(searchParams, { genre: g })}
-              active={searchParams.genre === g}
-            >
-              {g}
-            </Chip>
-          ))}
-        </FilterRow>
-
-        <FilterRow label="Era">
-          {ERA_PRESETS.map((era) => (
-            <Chip
-              key={era.id}
-              href={buildHref(searchParams, {
-                yearFrom: era.yearFrom,
-                yearTo: era.yearTo
-              })}
-              active={activeEra?.id === era.id}
-            >
-              {era.label}
-            </Chip>
-          ))}
-        </FilterRow>
-
-        <FilterRow label="Sort">
-          {SORT_OPTIONS.map((option) => (
-            <Chip
-              key={option.value}
-              href={buildHref(searchParams, { sort: option.value })}
-              active={activeSort === option.value}
-            >
-              {option.label}
-            </Chip>
-          ))}
-        </FilterRow>
-
-        {hasFilters && (
-          <div>
-            <Link
-              href={buildHref({ q: query, type: scope }, {})}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:bg-fg/[0.08] hover:text-fg"
-            >
-              <X className="h-3 w-3" />
-              Clear filters
-            </Link>
+      {query ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <ScopeFilter scope={scope} searchParams={searchParams} />
           </div>
-        )}
-      </div>
 
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm text-fg-muted tabular-nums">
-          {query
-            ? `${results.length} ${results.length === 1 ? "result" : "results"}`
-            : "Start typing above to search"}
-        </p>
-      </div>
+          <FilterRow label="Genre">
+            <Chip
+              href={buildHref(searchParams, { genre: undefined })}
+              active={!searchParams.genre}
+            >
+              Any
+            </Chip>
+            {QUICK_GENRES.map((g) => (
+              <Chip
+                key={g}
+                href={buildHref(searchParams, { genre: g })}
+                active={searchParams.genre === g}
+              >
+                {g}
+              </Chip>
+            ))}
+          </FilterRow>
+
+          <FilterRow label="Era">
+            {ERA_PRESETS.map((era) => (
+              <Chip
+                key={era.id}
+                href={buildHref(searchParams, {
+                  yearFrom: era.yearFrom,
+                  yearTo: era.yearTo
+                })}
+                active={activeEra?.id === era.id}
+              >
+                {era.label}
+              </Chip>
+            ))}
+          </FilterRow>
+
+          <FilterRow label="Sort">
+            {SORT_OPTIONS.map((option) => (
+              <Chip
+                key={option.value}
+                href={buildHref(searchParams, { sort: option.value })}
+                active={activeSort === option.value}
+              >
+                {option.label}
+              </Chip>
+            ))}
+          </FilterRow>
+
+          {hasFilters && (
+            <div>
+              <Link
+                href={buildHref({ q: query, type: scope }, {})}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-fg/[0.04] px-3 py-1 text-xs text-fg-muted transition hover:bg-fg/[0.08] hover:text-fg"
+              >
+                <X className="h-3 w-3" />
+                Clear filters
+              </Link>
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <p className="text-sm text-fg-muted tabular-nums">
+        {query
+          ? `${results.length} ${results.length === 1 ? "result" : "results"}`
+          : "Type to search the catalog"}
+      </p>
 
       {query && results.length === 0 ? (
         <EmptyState
@@ -277,11 +275,11 @@ const FilterRow = ({
   label: string;
   children: React.ReactNode;
 }): JSX.Element => (
-  <div className="flex items-center gap-3">
-    <span className="w-14 shrink-0 text-xs tracking-wide text-fg-faint uppercase">
+  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+    <span className="w-12 shrink-0 text-[10px] tracking-[0.16em] text-fg-faint uppercase">
       {label}
     </span>
-    <div className="-mx-2 flex flex-1 flex-wrap gap-2 overflow-x-auto px-2 py-0.5">
+    <div className="-mx-1 flex flex-1 flex-wrap gap-1.5 overflow-x-auto px-1 py-0.5">
       {children}
     </div>
   </div>

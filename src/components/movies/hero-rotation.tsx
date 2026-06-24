@@ -12,7 +12,6 @@ import {
 } from "framer-motion";
 import { Info, Play } from "lucide-react";
 
-import { SurpriseMeButton } from "@/components/movies/surprise-me-button";
 import { Button } from "@/components/ui/button";
 import { detailHrefFor, watchHrefFor } from "@/lib/catalog/titleId";
 import type { MovieCard } from "@/lib/types";
@@ -22,7 +21,7 @@ type Props = {
   reducedMotion?: boolean;
 };
 
-const ROTATE_MS = 7000;
+const ROTATE_MS = 8000;
 
 export const HeroRotation = ({
   titles,
@@ -37,7 +36,7 @@ export const HeroRotation = ({
     target: sectionRef,
     offset: ["start start", "end start"]
   });
-  const parallaxY = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const parallaxY = useTransform(scrollYProgress, [0, 1], [0, -48]);
 
   useEffect(() => {
     if (motionOff) return;
@@ -64,7 +63,7 @@ export const HeroRotation = ({
   return (
     <section
       ref={sectionRef}
-      className="relative isolate min-h-[520px] overflow-hidden rounded-xl border border-border bg-surface"
+      className="relative isolate min-h-[min(78vh,720px)] overflow-hidden bg-base"
     >
       {heroArtwork && (
         <motion.div
@@ -75,19 +74,19 @@ export const HeroRotation = ({
             <motion.div
               key={hero.titleId}
               className="absolute inset-0"
-              initial={{ opacity: 0, scale: motionOff ? 1 : 1.04 }}
+              initial={{ opacity: 0, scale: motionOff ? 1 : 1.05 }}
               animate={{
                 opacity: 1,
                 scale: 1,
-                transition: { duration: motionOff ? 0 : 0.7 }
+                transition: { duration: motionOff ? 0 : 0.85 }
               }}
-              exit={{ opacity: 0, transition: { duration: 0.5 } }}
+              exit={{ opacity: 0, transition: { duration: 0.45 } }}
             >
               <Image
                 src={heroArtwork}
                 alt={hero.title}
                 fill
-                className="object-cover"
+                className="object-cover object-top"
                 sizes="100vw"
                 priority
               />
@@ -95,14 +94,12 @@ export const HeroRotation = ({
           </AnimatePresence>
         </motion.div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-r from-base via-base/85 to-base/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-base/10" />
-      <div className="relative flex min-h-[520px] flex-col justify-end gap-5 p-5 md:p-10">
+      <div className="absolute inset-0 bg-gradient-to-r from-base via-base/92 to-base/15" />
+      <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20 to-transparent" />
+
+      <div className="relative mx-auto flex min-h-[min(78vh,720px)] max-w-7xl flex-col justify-end gap-6 px-4 pb-12 pt-28 md:px-6 md:pb-16">
         <div className="max-w-2xl space-y-4">
-          <p className="text-xs tracking-[0.22em] text-accent uppercase">
-            Featured
-          </p>
-          <h1 className="text-balance text-4xl leading-tight font-semibold text-fg md:text-6xl">
+          <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight text-fg md:text-6xl">
             {hero.title}
           </h1>
           {heroMeta && (
@@ -115,7 +112,7 @@ export const HeroRotation = ({
               {hero.genres.slice(0, 3).map((genre) => (
                 <span
                   key={genre}
-                  className="rounded-full border border-border bg-fg/[0.04] px-2.5 py-0.5 text-[11px] tracking-wide text-fg-muted"
+                  className="rounded-full border border-border/80 bg-fg/[0.05] px-2.5 py-0.5 text-[11px] tracking-wide text-fg-muted"
                 >
                   {genre}
                 </span>
@@ -123,7 +120,7 @@ export const HeroRotation = ({
             </div>
           )}
           {hero.synopsis && (
-            <p className="max-w-xl text-pretty text-sm leading-6 text-fg-muted md:text-base">
+            <p className="line-clamp-3 max-w-xl text-pretty text-sm leading-6 text-fg-muted md:line-clamp-2 md:text-base">
               {hero.synopsis}
             </p>
           )}
@@ -131,7 +128,7 @@ export const HeroRotation = ({
             <Link href={watchHrefFor(hero.titleId)} prefetch>
               <Button size="lg">
                 <Play className="h-5 w-5 fill-current" />
-                Play
+                Watch now
               </Button>
             </Link>
             <Link href={detailHrefFor(hero.titleId)} prefetch>
@@ -140,11 +137,15 @@ export const HeroRotation = ({
                 Details
               </Button>
             </Link>
-            <SurpriseMeButton />
           </div>
         </div>
+
         {titles.length > 1 && (
-          <div className="flex items-center gap-2" role="tablist" aria-label="Featured titles">
+          <div
+            className="flex items-center gap-2"
+            role="tablist"
+            aria-label="Featured titles"
+          >
             {titles.map((entry, entryIndex) => (
               <button
                 key={entry.titleId}
@@ -155,8 +156,8 @@ export const HeroRotation = ({
                 onClick={() => setIndex(entryIndex)}
                 className={
                   entryIndex === index
-                    ? "h-1.5 w-7 rounded-full bg-accent transition-[width]"
-                    : "h-1.5 w-3 rounded-full bg-fg/30 transition hover:bg-fg/50"
+                    ? "h-1 w-8 rounded-full bg-accent transition-[width]"
+                    : "h-1 w-4 rounded-full bg-fg/25 transition hover:bg-fg/45"
                 }
               />
             ))}

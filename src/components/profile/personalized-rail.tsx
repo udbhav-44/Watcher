@@ -45,16 +45,11 @@ export const PersonalizedRail = (): JSX.Element | null => {
   if (!data || !data.basis || data.recommendations.length === 0) return null;
 
   return (
-    <section className="space-y-3" aria-labelledby="personalized-rail-heading">
-      <div className="flex items-baseline justify-between">
-        <h2 id="personalized-rail-heading" className="text-xl font-medium text-fg">
-          Because you rated{" "}
-          <span className="text-accent">{data.basis.title}</span>
-        </h2>
-        <span className="text-xs text-fg-faint tabular-nums">
-          {data.recommendations.length} suggestions
-        </span>
-      </div>
+    <section className="space-y-4" aria-labelledby="personalized-rail-heading">
+      <h2 id="personalized-rail-heading" className="text-lg font-medium tracking-tight text-fg md:text-xl">
+        Because you liked{" "}
+        <span className="text-accent">{data.basis.title}</span>
+      </h2>
       <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {data.recommendations.map((entry) => (
           <Link
