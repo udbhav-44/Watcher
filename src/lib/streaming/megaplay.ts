@@ -92,15 +92,21 @@ export const probeMegaplayUrl = async (url: string): Promise<boolean> => {
   }
 };
 
+export type MegaplayResolveResult = {
+  /** Working URLs first, then probed failures for client-side retries. */
+  urls: string[];
+  hasWorking: boolean;
+};
+
 /**
  * Probe candidate URLs server-side and return working ones first, with failed
  * strategies kept as client-side fallbacks.
  */
 export const resolveMegaplayEmbedUrls = async (
   options: BuildOptions
-): Promise<string[]> => {
+): Promise<MegaplayResolveResult> => {
   const candidates = buildMegaplayEmbedCandidates(options);
-  if (candidates.length === 0) return [];
+  if (candidates.length === 0) return { urls: [], hasWorking: false };
 
   const probed = await Promise.all(
     candidates.map(async (candidate) => ({
@@ -111,7 +117,10 @@ export const resolveMegaplayEmbedUrls = async (
 
   const working = probed.filter((entry) => entry.ok).map((entry) => entry.url);
   const failed = probed.filter((entry) => !entry.ok).map((entry) => entry.url);
-  return [...working, ...failed];
+  return {
+    urls: [...working, ...failed],
+    hasWorking: working.length > 0
+  };
 };
 
 export const languageAvailable = (

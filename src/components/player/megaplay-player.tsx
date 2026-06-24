@@ -21,6 +21,7 @@ type StreamProvider = "megaplay" | "vidking";
 type Props = {
   embedUrls: string[];
   vidkingFallbackUrl?: string | null;
+  startWithVidking?: boolean;
   poster?: string | null;
   titleId: string;
   hasSub: boolean;
@@ -33,6 +34,7 @@ type Props = {
 export const MegaplayPlayer = ({
   embedUrls,
   vidkingFallbackUrl = null,
+  startWithVidking = false,
   poster,
   titleId,
   hasSub,
@@ -44,7 +46,9 @@ export const MegaplayPlayer = ({
   const defaultLanguage: MegaplayLanguage = hasSub ? "sub" : "dub";
   const [language, setLanguage] = useState<MegaplayLanguage>(defaultLanguage);
   const [sourceIndex, setSourceIndex] = useState(0);
-  const [activeProvider, setActiveProvider] = useState<StreamProvider>("megaplay");
+  const [activeProvider, setActiveProvider] = useState<StreamProvider>(() =>
+    startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay"
+  );
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [suggestAlternateLanguage, setSuggestAlternateLanguage] =
     useState(false);
@@ -99,13 +103,15 @@ export const MegaplayPlayer = ({
 
   useEffect(() => {
     setSourceIndex(0);
-    setActiveProvider("megaplay");
+    setActiveProvider(
+      startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay"
+    );
     setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
     vidkingProgressRef.current = false;
     clearVidkingStallTimer();
-  }, [clearVidkingStallTimer, languageUrls, vidkingFallbackUrl]);
+  }, [clearVidkingStallTimer, languageUrls, startWithVidking, vidkingFallbackUrl]);
 
   useEffect(() => {
     probingRef.current = false;
@@ -145,11 +151,14 @@ export const MegaplayPlayer = ({
       const response = await fetch(
         `/api/megaplay/probe?url=${encodeURIComponent(activeSrc)}`
       );
-      if (!response.ok) return;
+      if (!response.ok) {
+        tryNextSource();
+        return;
+      }
       const data = (await response.json()) as { ok?: boolean };
       if (!data.ok) tryNextSource();
     } catch {
-      // best-effort
+      tryNextSource();
     } finally {
       probingRef.current = false;
     }
@@ -217,6 +226,7 @@ export const MegaplayPlayer = ({
 
   const sourceLabel = activeProvider === "vidking" ? "Vidking" : "MegaPlay";
   const subDubApplicable = activeProvider === "megaplay";
+  const hasVidkingFallback = Boolean(vidkingFallbackUrl);
 
   return (
     <div className="space-y-3">
@@ -234,12 +244,14 @@ export const MegaplayPlayer = ({
       ) : (
         <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg border border-border bg-black/80 px-6 text-center">
           <p className="text-sm font-medium text-fg">
-            Playback unavailable for this{" "}
-            {language === "sub" ? "subtitled" : "dubbed"} stream.
+            Playback unavailable for this episode.
           </p>
           <p className="text-xs text-fg-muted">
-            MegaPlay and Vidking could not play this episode. Try another audio
-            track, episode, or check back later.
+            {hasVidkingFallback && subDubApplicable
+              ? "MegaPlay could not load this episode and the Vidking fallback also failed. Try another episode or check back later."
+              : hasVidkingFallback
+                ? "Vidking could not play this episode. Try another episode or check back later."
+                : "MegaPlay could not play this episode and no Vidking match was found. Try another episode or check back later."}
           </p>
         </div>
       )}

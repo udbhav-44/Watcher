@@ -48,7 +48,7 @@ export default async function AnimeWatchPage({
   const nextEpisodeEntry =
     currentIndex >= 0 ? anime.episodes[currentIndex + 1] : null;
 
-  const [embedUrls, vidkingFallback] = currentEpisode
+  const [megaplayResult, vidkingFallback] = currentEpisode
     ? await Promise.all([
         resolveMegaplayEmbedUrls({
           language: currentEpisode.hasSub ? "sub" : "dub",
@@ -64,11 +64,16 @@ export default async function AnimeWatchPage({
           episodeNumber: currentEpisode.number
         })
       ])
-    : [[], null];
+    : [{ urls: [], hasWorking: false }, null];
+
+  const embedUrls = megaplayResult.urls;
 
   if (embedUrls.length === 0 && !vidkingFallback) return notFound();
 
-  const embedUrl = embedUrls[0] ?? vidkingFallback?.url ?? "";
+  const startWithVidking = !megaplayResult.hasWorking && Boolean(vidkingFallback);
+  const embedUrl = startWithVidking
+    ? (vidkingFallback?.url ?? "")
+    : (embedUrls[0] ?? vidkingFallback?.url ?? "");
   const episodeLabel = formatAnimeEpisodeLabel(
     episodeNumber,
     currentEpisode?.title
@@ -88,6 +93,7 @@ export default async function AnimeWatchPage({
             episodeName={currentEpisode?.title ?? null}
             embedUrls={embedUrls}
             vidkingFallbackUrl={vidkingFallback?.url ?? null}
+            startWithVidking={startWithVidking}
             hasSub={currentEpisode?.hasSub ?? false}
             hasDub={currentEpisode?.hasDub ?? false}
             episodeLabel={episodeLabel}

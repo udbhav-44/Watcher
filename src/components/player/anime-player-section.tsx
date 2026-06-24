@@ -14,6 +14,7 @@ type Props = {
   episodeName?: string | null;
   embedUrls: string[];
   vidkingFallbackUrl?: string | null;
+  startWithVidking?: boolean;
   hasSub: boolean;
   hasDub: boolean;
   episodeLabel?: string | null;
@@ -29,6 +30,7 @@ export const AnimePlayerSection = ({
   episodeName,
   embedUrls,
   vidkingFallbackUrl,
+  startWithVidking = false,
   hasSub,
   hasDub,
   episodeLabel,
@@ -53,6 +55,7 @@ export const AnimePlayerSection = ({
       <MegaplayPlayer
         embedUrls={embedUrls}
         vidkingFallbackUrl={vidkingFallbackUrl}
+        startWithVidking={startWithVidking}
         poster={poster}
         titleId={titleId}
         hasSub={hasSub}
