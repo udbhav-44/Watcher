@@ -41,15 +41,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Prisma CLI + engines + schema + migrations (for `prisma migrate deploy` at
-# boot time via the one-shot streaming-migrate compose service). @prisma/
-# carries the engines binary the CLI needs; standalone already includes
-# @prisma/client, COPY merges directories.
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
 USER nextjs
 EXPOSE 3000
 
@@ -57,3 +48,17 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/system/readiness || exit 1
 
 CMD ["node", "server.js"]
+
+# ============ migrate ============
+# One-shot image for `streaming-migrate` compose service. Needs full Prisma CLI
+# transitive deps (e.g. effect); partial copies from runner break migrate deploy.
+# Build: docker build --target migrate -t streaming-migrate:v1 .
+FROM node:20-alpine AS migrate
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+
+CMD ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
