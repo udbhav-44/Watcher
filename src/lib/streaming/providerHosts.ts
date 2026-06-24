@@ -1,13 +1,9 @@
 /**
- * Hosts we are willing to *server-side fetch* — health checks, the MegaPlay
- * probe, and the embed proxy / link-hardening. Only providers that answer
- * server-side GETs belong here.
+ * Hosts we are willing to *server-side fetch* — health checks and the embed
+ * proxy / link-hardening. Only providers that answer server-side GETs belong
+ * here.
  */
-const probeHostRules = [
-  "playimdb.domains",
-  "vidking.net",
-  "megaplay.buzz"
-] as const;
+const probeHostRules = ["playimdb.domains", "vidking.net"] as const;
 
 /**
  * Direct-iframe-only providers. These sit behind Cloudflare and 403 our
@@ -26,8 +22,7 @@ const directIframeHostRules = [
   "vidfast.net",
   "vidfast.xyz",
   "vidlink.pro",
-  "vidsrc.cc",
-  "supaplay.fun"
+  "vidsrc.cc"
 ] as const;
 
 const allHostRules = [...probeHostRules, ...directIframeHostRules] as const;

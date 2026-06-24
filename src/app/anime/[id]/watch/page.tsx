@@ -7,10 +7,7 @@ import { AnimeWatchSession } from "@/components/player/anime-watch-session";
 import { isAnimeTitleId } from "@/lib/catalog/titleId";
 import { getAnimeDetailByTitleId } from "@/lib/data/anime";
 import { buildAnimeExtraServers } from "@/lib/streaming/animeServers";
-import {
-  formatAnimeEpisodeLabel,
-  resolveMegaplayEmbedUrls
-} from "@/lib/streaming/megaplay";
+import { formatAnimeEpisodeLabel } from "@/lib/streaming/animeEmbed";
 import { resolveVidkingAnimeFallback } from "@/lib/streaming/vidkingAnime";
 
 type Props = {
@@ -49,47 +46,37 @@ export default async function AnimeWatchPage({
   const nextEpisodeEntry =
     currentIndex >= 0 ? anime.episodes[currentIndex + 1] : null;
 
-  const [megaplayResult, vidkingFallback] = currentEpisode
-    ? await Promise.all([
-        resolveMegaplayEmbedUrls({
-          language: currentEpisode.hasSub ? "sub" : "dub",
-          episodeNumber: currentEpisode.number,
-          episodeEmbedId: currentEpisode.episodeEmbedId,
-          malId: anime.malId,
-          aniId: anime.aniId
-        }),
-        resolveVidkingAnimeFallback({
-          title: anime.title,
-          alternativeTitle: anime.alternativeTitle,
-          year: anime.releaseYear,
-          malId: anime.malId,
-          aniId: anime.aniId,
-          episodeNumber: currentEpisode.number
-        })
-      ])
-    : [{ urls: [], hasWorking: false }, null];
+  const vidkingFallback = currentEpisode
+    ? await resolveVidkingAnimeFallback({
+        title: anime.title,
+        alternativeTitle: anime.alternativeTitle,
+        year: anime.releaseYear,
+        malId: anime.malId,
+        aniId: anime.aniId,
+        episodeNumber: currentEpisode.number
+      })
+    : null;
 
-  const embedUrls = megaplayResult.urls;
-
-  const extraServers = currentEpisode
+  const servers = currentEpisode
     ? buildAnimeExtraServers({
         episodeNumber: currentEpisode.number,
-        episodeEmbedId: currentEpisode.episodeEmbedId,
         malId: anime.malId,
         aniId: anime.aniId
       })
     : [];
-  const firstExtraUrl = extraServers.find((server) => server.urls.length > 0)
+  const firstServerUrl = servers.find((server) => server.urls.length > 0)
     ?.urls[0];
 
-  if (embedUrls.length === 0 && !vidkingFallback && !firstExtraUrl) {
+  if (!firstServerUrl && !vidkingFallback) {
     return notFound();
   }
 
-  const startWithVidking = !megaplayResult.hasWorking && Boolean(vidkingFallback);
+  // Start on the first real anime server (Vidsrc.cc, then VidLink); only open
+  // straight on the Vidking TMDB fallback when no direct server resolves.
+  const startWithVidking = !firstServerUrl && Boolean(vidkingFallback);
   const embedUrl = startWithVidking
     ? (vidkingFallback?.url ?? "")
-    : (embedUrls[0] ?? firstExtraUrl ?? vidkingFallback?.url ?? "");
+    : (firstServerUrl ?? vidkingFallback?.url ?? "");
   const episodeLabel = formatAnimeEpisodeLabel(
     episodeNumber,
     currentEpisode?.title
@@ -107,10 +94,9 @@ export default async function AnimeWatchPage({
             poster={anime.backdropUrl}
             episode={episodeNumber}
             episodeName={currentEpisode?.title ?? null}
-            embedUrls={embedUrls}
             vidkingFallbackUrl={vidkingFallback?.url ?? null}
             startWithVidking={startWithVidking}
-            extraServers={extraServers}
+            servers={servers}
             hasSub={currentEpisode?.hasSub ?? false}
             hasDub={currentEpisode?.hasDub ?? false}
             episodeLabel={episodeLabel}

@@ -99,8 +99,9 @@ const parseNestedPlayerEvent = (payload: RawMessage): {
 };
 
 /**
- * Normalize postMessage payloads from MegaPlay (megacloud) and other embed
- * providers into progress or completion signals.
+ * Normalize postMessage payloads from megacloud-based and PLAYER_EVENT-style
+ * embed providers (Vidsrc.cc, VidLink, Vidking, …) into progress or completion
+ * signals.
  */
 export const parseEmbedMessage = (
   payload: unknown

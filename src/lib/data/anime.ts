@@ -8,7 +8,7 @@ import {
   type AnikotoAnime,
   type AnikotoEpisode
 } from "@/lib/data/anikoto";
-import { languageAvailable } from "@/lib/streaming/megaplay";
+import { languageAvailable } from "@/lib/streaming/animeEmbed";
 import type { AnimeDetail, AnimeEpisodeSummary, MovieCard } from "@/lib/types";
 
 const parseScore = (value: string | null | undefined): number | null => {
