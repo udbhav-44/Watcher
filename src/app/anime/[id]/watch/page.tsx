@@ -61,6 +61,8 @@ export default async function AnimeWatchPage({
           title: anime.title,
           alternativeTitle: anime.alternativeTitle,
           year: anime.releaseYear,
+          malId: anime.malId,
+          aniId: anime.aniId,
           episodeNumber: currentEpisode.number
         })
       ])
