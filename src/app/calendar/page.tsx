@@ -65,7 +65,7 @@ export default async function CalendarPage(): Promise<JSX.Element> {
         <EmptyState
           icon={<CalendarRange className="h-5 w-5" />}
           title="No upcoming episodes"
-          description="Save a series or rate one you've watched to populate this calendar with new episodes for the next two weeks."
+          description="Save a series or start watching one to populate this calendar with new episodes for the next two weeks."
           action={
             <Link
               href="/tv"

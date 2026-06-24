@@ -3,7 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform
+} from "framer-motion";
 import { Info, Play } from "lucide-react";
 
 import { SurpriseMeButton } from "@/components/movies/surprise-me-button";
@@ -24,8 +30,14 @@ export const HeroRotation = ({
 }: Props): JSX.Element | null => {
   const [index, setIndex] = useState(0);
   const timerRef = useRef<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const systemReducedMotion = useReducedMotion();
   const motionOff = reducedMotion ?? systemReducedMotion ?? false;
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"]
+  });
+  const parallaxY = useTransform(scrollYProgress, [0, 1], [0, -60]);
 
   useEffect(() => {
     if (motionOff) return;
@@ -50,30 +62,38 @@ export const HeroRotation = ({
     .join("  ·  ");
 
   return (
-    <section className="relative isolate min-h-[520px] overflow-hidden rounded-xl border border-border bg-surface">
+    <section
+      ref={sectionRef}
+      className="relative isolate min-h-[520px] overflow-hidden rounded-xl border border-border bg-surface"
+    >
       {heroArtwork && (
-        <AnimatePresence initial={false} mode="popLayout">
-          <motion.div
-            key={hero.titleId}
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: motionOff ? 1 : 1.04 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              transition: { duration: motionOff ? 0 : 0.7 }
-            }}
-            exit={{ opacity: 0, transition: { duration: 0.5 } }}
-          >
-            <Image
-              src={heroArtwork}
-              alt={hero.title}
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
-            />
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          className="absolute inset-0"
+          style={motionOff ? undefined : { y: parallaxY }}
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.div
+              key={hero.titleId}
+              className="absolute inset-0"
+              initial={{ opacity: 0, scale: motionOff ? 1 : 1.04 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                transition: { duration: motionOff ? 0 : 0.7 }
+              }}
+              exit={{ opacity: 0, transition: { duration: 0.5 } }}
+            >
+              <Image
+                src={heroArtwork}
+                alt={hero.title}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
+              />
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-base via-base/85 to-base/20" />
       <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-base/10" />

@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { isTvTitleId } from "@/lib/catalog/titleId";
 import { getMovieByTitleId, getSimilarMovies } from "@/lib/data/movies";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   params: { ttid: string };
 };

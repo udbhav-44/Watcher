@@ -21,8 +21,8 @@ export const MovieCard = ({ movie }: Props): JSX.Element => {
 
   return (
     <motion.div
-      whileHover={prefersReducedMotion ? undefined : { y: -4 }}
-      transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}
+      whileHover={prefersReducedMotion ? undefined : { y: -6, scale: 1.02 }}
+      transition={{ duration: 0.26, ease: [0.2, 0.7, 0.2, 1] }}
       className="group w-[168px] shrink-0 sm:w-[184px] lg:w-[196px]"
     >
       <Link

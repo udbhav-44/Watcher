@@ -14,10 +14,10 @@ export const PageTransition = ({ children }: Props): JSX.Element => {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
-        initial={false}
+        initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 6 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
         exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -4 }}
-        transition={{ duration: 0.25 }}
+        transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
       >
         {children}
       </motion.div>

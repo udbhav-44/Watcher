@@ -19,7 +19,8 @@ const envSchema = z.object({
   TMDB_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   UPSTASH_REDIS_REST_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   UPSTASH_REDIS_REST_TOKEN: z.preprocess(emptyToUndefined, z.string().optional()),
-  SENTRY_DSN: z.preprocess(emptyToUndefined, z.string().url().optional())
+  SENTRY_DSN: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  SITE_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(8).optional())
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -10,7 +10,7 @@ RUN npm ci
 
 RUN npx prisma generate
 
-COPY tsconfig.json next.config.mjs middleware.ts postcss.config.mjs ./
+COPY tsconfig.json next.config.mjs postcss.config.mjs ./
 COPY src ./src
 COPY public ./public
 

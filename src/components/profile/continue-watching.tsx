@@ -12,6 +12,9 @@ type WatchEvent = {
   id: string;
   titleId: string;
   progressPercent: number;
+  mediaType?: "movie" | "tv";
+  season?: number | null;
+  episode?: number | null;
 };
 
 type ResumeItem = WatchEvent & {
@@ -27,10 +30,14 @@ export const ContinueWatching = (): JSX.Element | null => {
       try {
         const res = await fetch("/api/watch-events");
         const data = (await res.json()) as { events?: WatchEvent[] };
+        const seen = new Set<string>();
         const filtered = (data.events ?? [])
-          .filter(
-            (event) => event.progressPercent > 5 && event.progressPercent < 95
-          )
+          .filter((event) => {
+            if (event.progressPercent <= 5 || event.progressPercent >= 95) return false;
+            if (seen.has(event.titleId)) return false;
+            seen.add(event.titleId);
+            return true;
+          })
           .slice(0, 8);
         if (cancelled) return;
         setItems(filtered);
@@ -90,10 +97,18 @@ export const ContinueWatching = (): JSX.Element | null => {
                   )
                 )
               : null;
+          const isTv = item.mediaType === "tv" && item.season && item.episode;
+          const episodeLabel = isTv
+            ? `S${item.season}  ·  E${item.episode}`
+            : null;
+          const baseHref = watchHrefFor(item.titleId);
+          const resumeHref = (
+            isTv ? `${baseHref}?s=${item.season}&e=${item.episode}` : baseHref
+          ) as Parameters<typeof Link>[0]["href"];
           return (
             <Link
               key={item.id}
-              href={watchHrefFor(item.titleId)}
+              href={resumeHref}
               className="group relative w-[260px] shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition outline-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               <div className="relative aspect-video w-full overflow-hidden bg-surface-3">
@@ -129,8 +144,11 @@ export const ContinueWatching = (): JSX.Element | null => {
                   {title}
                 </p>
                 <p className="text-xs text-fg-faint tabular-nums">
+                  {episodeLabel ? `${episodeLabel}  ·  ` : ""}
                   {Math.round(progress)}% watched
-                  {remaining ? `  ·  ${remaining} min left` : ""}
+                  {remaining && !episodeLabel
+                    ? `  ·  ${remaining} min left`
+                    : ""}
                 </p>
               </div>
             </Link>
