@@ -1,5 +1,6 @@
-import { env } from "@/lib/config/env";
+import { tvTitleIdFromTmdb } from "@/lib/catalog/titleId";
 import { tmdbFetch } from "@/lib/data/tmdb";
+import { resolveProviderUrlsFromIdentifier } from "@/lib/streaming/resolveProviders";
 
 export type VidkingAnimeFallback = {
   url: string;
@@ -18,8 +19,6 @@ type TmdbTvSearchResponse = {
 type TmdbFindResponse = {
   tv_results?: Array<{ id: number; name: string }>;
 };
-
-const VIDKING_BASE = env.NEXT_PUBLIC_VIDKING_BASE.replace(/\/$/, "");
 
 const ROMAN_NUMERAL_VALUES: Record<string, number> = {
   I: 1,
@@ -122,12 +121,25 @@ const buildSearchQueries = (
   ]);
 };
 
-export const buildVidkingAnimeEmbedUrl = (
+/**
+ * Build the Vidking embed URL through the SAME resolver the TV watch page
+ * uses (`resolveProviderUrlsFromIdentifier`). This guarantees the anime
+ * fallback URL is byte-identical to what a user gets by finding the show
+ * under the TV tab — the path the user confirmed already plays. Returns
+ * `null` if the resolver can't map the id to a provider URL.
+ */
+const buildVidkingAnimeEmbedUrl = async (
   tmdbTvId: string,
   seasonNumber: number,
   episodeNumber: number
-): string =>
-  `${VIDKING_BASE}/embed/tv/${tmdbTvId}/${seasonNumber}/${episodeNumber}?autoPlay=true&nextEpisode=true&episodeSelector=true`;
+): Promise<string | null> => {
+  const providers = await resolveProviderUrlsFromIdentifier(
+    tvTitleIdFromTmdb(Number(tmdbTvId)),
+    { season: seasonNumber, episode: episodeNumber }
+  );
+  const vidking = providers.find((entry) => entry.id === "vidking");
+  return vidking?.url ?? null;
+};
 
 const searchTmdbTvId = async (
   query: string,
@@ -222,13 +234,16 @@ export const resolveVidkingAnimeFallback = async (options: {
   const tmdbTvId = await resolveTmdbTvIdForAnime(options);
   if (!tmdbTvId) return null;
 
+  const url = await buildVidkingAnimeEmbedUrl(
+    tmdbTvId,
+    seasonNumber,
+    options.episodeNumber
+  );
+  if (!url) return null;
+
   return {
     tmdbTvId,
     seasonNumber,
-    url: buildVidkingAnimeEmbedUrl(
-      tmdbTvId,
-      seasonNumber,
-      options.episodeNumber
-    )
+    url
   };
 };
