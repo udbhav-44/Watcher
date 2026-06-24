@@ -14,6 +14,7 @@ import {
 } from "@/lib/streaming/megaplay";
 
 const LANGUAGE_KEY = "campusstream:anime-language";
+const SERVER_KEY = "campusstream:preferred-provider";
 const VIDKING_STALL_MS = 25_000;
 
 type StreamProvider = "megaplay" | "vidking";
@@ -55,12 +56,31 @@ export const MegaplayPlayer = ({
   const probingRef = useRef(false);
   const vidkingProgressRef = useRef(false);
   const vidkingStallTimerRef = useRef<number | null>(null);
+  // The server the user last picked by hand. Drives the initial provider on
+  // mount and survives episode navigation; null means "use the smart default".
+  const preferredServerRef = useRef<StreamProvider | null>(null);
+
+  /**
+   * Pick the provider to start on. A manual preference wins when its source is
+   * actually available, otherwise fall back to the probe-derived default that
+   * keeps MegaPlay primary and only opens on Vidking when MegaPlay is dead.
+   */
+  const resolveDefaultProvider = useCallback((): StreamProvider => {
+    const preferred = preferredServerRef.current;
+    if (preferred === "vidking" && vidkingFallbackUrl) return "vidking";
+    if (preferred === "megaplay") return "megaplay";
+    return startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay";
+  }, [startWithVidking, vidkingFallbackUrl]);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(LANGUAGE_KEY);
       if (stored === "sub" && hasSub) setLanguage("sub");
       if (stored === "dub" && hasDub) setLanguage("dub");
+      const storedServer = window.localStorage.getItem(SERVER_KEY);
+      if (storedServer === "vidking" || storedServer === "megaplay") {
+        preferredServerRef.current = storedServer;
+      }
     } catch {
       // ignore
     }
@@ -103,19 +123,23 @@ export const MegaplayPlayer = ({
 
   useEffect(() => {
     setSourceIndex(0);
-    setActiveProvider(
-      startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay"
-    );
+    setActiveProvider(resolveDefaultProvider());
     setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
     vidkingProgressRef.current = false;
     clearVidkingStallTimer();
-  }, [clearVidkingStallTimer, languageUrls, startWithVidking, vidkingFallbackUrl]);
+  }, [clearVidkingStallTimer, languageUrls, resolveDefaultProvider]);
 
   useEffect(() => {
     probingRef.current = false;
   }, [sourceIndex, activeSrc, activeProvider]);
+
+  // Keep the mini-player / watch history bound to whatever is actually playing,
+  // regardless of how the source was chosen (manual switch or auto-fallback).
+  useEffect(() => {
+    if (activeSrc) onActiveSrcChange?.(activeSrc);
+  }, [activeSrc, onActiveSrcChange]);
 
   const tryNextSource = useCallback((): void => {
     if (activeProvider === "vidking") {
@@ -212,6 +236,23 @@ export const MegaplayPlayer = ({
     }
   };
 
+  const selectServer = (next: StreamProvider): void => {
+    if (next === activeProvider) return;
+    if (next === "vidking" && !vidkingFallbackUrl) return;
+    preferredServerRef.current = next;
+    try {
+      window.localStorage.setItem(SERVER_KEY, next);
+    } catch {
+      // ignore
+    }
+    setActiveProvider(next);
+    setSourceIndex(0);
+    setPlaybackFailed(false);
+    setSuggestAlternateLanguage(false);
+    probingRef.current = false;
+    vidkingProgressRef.current = false;
+  };
+
   const alternateLanguage: MegaplayLanguage | null =
     language === "sub" && hasDub
       ? "dub"
@@ -296,28 +337,33 @@ export const MegaplayPlayer = ({
         </div>
       )}
 
-      <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-lg p-3">
+      <div className="glass-panel space-y-3 rounded-lg p-3">
         <div className="min-w-0">
           <p className="text-xs tracking-[0.18em] text-fg-faint uppercase">
-            {activeProvider === "vidking" ? "Source" : "Audio"}
+            Now playing
           </p>
           <p className="text-sm font-medium text-fg">
             {sourceLabel}
+            {subDubApplicable ? (
+              <span className="text-fg-muted">
+                {"  ·  "}
+                {language === "dub" ? "Dub" : "Sub"}
+              </span>
+            ) : null}
             {episodeLabel ? (
               <span className="text-fg-muted">  ·  {episodeLabel}</span>
             ) : null}
           </p>
-          {activeProvider === "vidking" && (
-            <p className="mt-0.5 text-xs text-fg-faint">
-              Fallback stream via TMDB catalog
-            </p>
-          )}
         </div>
-        <div className="flex gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-14 shrink-0 text-xs tracking-[0.18em] text-fg-faint uppercase">
+            Audio
+          </span>
           <Button
             type="button"
             size="sm"
-            variant={language === "sub" ? "primary" : "outline"}
+            variant={language === "sub" && subDubApplicable ? "primary" : "outline"}
             disabled={!hasSub || !subDubApplicable}
             onClick={() => selectLanguage("sub")}
             className={cn((!hasSub || !subDubApplicable) && "opacity-50")}
@@ -327,14 +373,54 @@ export const MegaplayPlayer = ({
           <Button
             type="button"
             size="sm"
-            variant={language === "dub" ? "primary" : "outline"}
+            variant={language === "dub" && subDubApplicable ? "primary" : "outline"}
             disabled={!hasDub || !subDubApplicable}
             onClick={() => selectLanguage("dub")}
             className={cn((!hasDub || !subDubApplicable) && "opacity-50")}
           >
             Dub
           </Button>
+          {!subDubApplicable && (
+            <span className="text-xs text-fg-faint">
+              Set audio inside the Vidking player controls
+            </span>
+          )}
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="w-14 shrink-0 text-xs tracking-[0.18em] text-fg-faint uppercase">
+            Server
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant={activeProvider === "megaplay" ? "primary" : "outline"}
+            onClick={() => selectServer("megaplay")}
+          >
+            MegaPlay
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={activeProvider === "vidking" ? "primary" : "outline"}
+            disabled={!hasVidkingFallback}
+            onClick={() => selectServer("vidking")}
+            className={cn(!hasVidkingFallback && "opacity-50")}
+            title={
+              hasVidkingFallback
+                ? "TMDB-catalog stream (carries its own audio)"
+                : "No Vidking match for this episode"
+            }
+          >
+            Vidking
+          </Button>
+        </div>
+
+        <p className="text-xs text-fg-faint">
+          MegaPlay carries separate Sub and Dub tracks. Quality, captions, and
+          any extra audio tracks can also be changed from the player&apos;s own
+          settings (gear) menu.
+        </p>
       </div>
     </div>
   );

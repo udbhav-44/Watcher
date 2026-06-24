@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ExternalLink, Shield } from "lucide-react";
+import { ChevronRight, ExternalLink, Shield, Volume2 } from "lucide-react";
 
 import { StreamingPlayer } from "@/components/player/StreamingPlayer";
 import { Button } from "@/components/ui/button";
@@ -182,6 +182,15 @@ export const ServerTogglePlayer = ({
         </div>
 
         <div className="space-y-1.5 text-xs">
+          <p className="inline-flex items-start gap-1.5 text-fg-muted">
+            <Volume2 className="mt-0.5 h-3 w-3 shrink-0 text-accent" />
+            <span>
+              To change audio language, subtitles, or quality, use the
+              player&apos;s own settings (gear) menu. Switching servers above
+              can also surface a different audio track when one source is
+              English-only.
+            </span>
+          </p>
           <p className="inline-flex items-start gap-1.5 text-fg-muted">
             <Shield className="mt-0.5 h-3 w-3 shrink-0 text-accent" />
             <span>
