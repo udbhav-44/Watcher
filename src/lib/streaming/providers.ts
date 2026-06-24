@@ -19,7 +19,7 @@
 
 import { env } from "@/lib/config/env";
 
-export type EmbedProviderId = "vidking";
+export type EmbedProviderId = "vidking" | "vidfast" | "vidlink" | "vidsrc-cc";
 
 export type ProviderAdQuality = "low" | "medium" | "heavy";
 
@@ -52,6 +52,32 @@ export const embedProviders: EmbedProvider[] = [
     movieUrl: (id) => `${VIDKING_BASE}/embed/movie/${id}`,
     tvUrl: (id, s, e) => `${VIDKING_BASE}/embed/tv/${id}/${s}/${e}`,
     adQuality: "low"
+  },
+  // The "vid*" family below all accept a raw TMDb id and emit
+  // PLAYER_EVENT-style postMessages, so they slot in next to Vidking with no
+  // extra id resolution. They sit behind Cloudflare and 403 server-side fetches
+  // (see docs/streaming-providers-research.md), so they are direct-iframe-only:
+  // no server-side probe, just an extra manual server choice.
+  {
+    id: "vidfast",
+    label: "VidFast",
+    movieUrl: (id) => `https://vidfast.pro/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidfast.pro/tv/${id}/${s}/${e}`,
+    adQuality: "low"
+  },
+  {
+    id: "vidlink",
+    label: "VidLink",
+    movieUrl: (id) => `https://vidlink.pro/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
+    adQuality: "medium"
+  },
+  {
+    id: "vidsrc-cc",
+    label: "Vidsrc.cc",
+    movieUrl: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
+    adQuality: "medium"
   }
 ];
 

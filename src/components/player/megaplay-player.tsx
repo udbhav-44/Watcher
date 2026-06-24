@@ -8,6 +8,7 @@ import { StreamingPlayer } from "@/components/player/StreamingPlayer";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { parseEmbedMessage } from "@/lib/player/embedEvents";
 import { cn } from "@/lib/utils";
+import type { AnimeExtraServer } from "@/lib/streaming/animeServers";
 import {
   applyMegaplayLanguage,
   type MegaplayLanguage
@@ -15,14 +16,16 @@ import {
 
 const LANGUAGE_KEY = "campusstream:anime-language";
 const SERVER_KEY = "campusstream:preferred-provider";
-const VIDKING_STALL_MS = 25_000;
+const DIRECT_STALL_MS = 25_000;
 
-type StreamProvider = "megaplay" | "vidking";
+const MEGAPLAY_ID = "megaplay";
+const VIDKING_ID = "vidking";
 
 type Props = {
   embedUrls: string[];
   vidkingFallbackUrl?: string | null;
   startWithVidking?: boolean;
+  extraServers?: AnimeExtraServer[];
   poster?: string | null;
   titleId: string;
   hasSub: boolean;
@@ -36,6 +39,7 @@ export const MegaplayPlayer = ({
   embedUrls,
   vidkingFallbackUrl = null,
   startWithVidking = false,
+  extraServers = [],
   poster,
   titleId,
   hasSub,
@@ -47,30 +51,67 @@ export const MegaplayPlayer = ({
   const defaultLanguage: MegaplayLanguage = hasSub ? "sub" : "dub";
   const [language, setLanguage] = useState<MegaplayLanguage>(defaultLanguage);
   const [sourceIndex, setSourceIndex] = useState(0);
-  const [activeProvider, setActiveProvider] = useState<StreamProvider>(() =>
-    startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay"
+
+  const hasMegaplay = embedUrls.length > 0;
+  const hasVidkingFallback = Boolean(vidkingFallbackUrl);
+
+  const availableExtras = useMemo(
+    () => extraServers.filter((server) => server.urls.length > 0),
+    [extraServers]
+  );
+
+  const firstAvailableId = useMemo((): string => {
+    if (hasMegaplay) return MEGAPLAY_ID;
+    if (availableExtras[0]) return availableExtras[0].id;
+    if (hasVidkingFallback) return VIDKING_ID;
+    return MEGAPLAY_ID;
+  }, [availableExtras, hasMegaplay, hasVidkingFallback]);
+
+  const [activeProvider, setActiveProvider] = useState<string>(() =>
+    startWithVidking && vidkingFallbackUrl ? VIDKING_ID : firstAvailableId
   );
   const [playbackFailed, setPlaybackFailed] = useState(false);
   const [suggestAlternateLanguage, setSuggestAlternateLanguage] =
     useState(false);
   const probingRef = useRef(false);
-  const vidkingProgressRef = useRef(false);
-  const vidkingStallTimerRef = useRef<number | null>(null);
+  const directProgressRef = useRef(false);
+  const stallTimerRef = useRef<number | null>(null);
   // The server the user last picked by hand. Drives the initial provider on
   // mount and survives episode navigation; null means "use the smart default".
-  const preferredServerRef = useRef<StreamProvider | null>(null);
+  const preferredServerRef = useRef<string | null>(null);
+
+  const activeExtra = useMemo(
+    () => availableExtras.find((server) => server.id === activeProvider) ?? null,
+    [availableExtras, activeProvider]
+  );
+
+  const subDubApplicable =
+    activeProvider === MEGAPLAY_ID ||
+    (activeExtra?.supportsLanguageToggle ?? false);
 
   /**
    * Pick the provider to start on. A manual preference wins when its source is
    * actually available, otherwise fall back to the probe-derived default that
    * keeps MegaPlay primary and only opens on Vidking when MegaPlay is dead.
    */
-  const resolveDefaultProvider = useCallback((): StreamProvider => {
+  const resolveDefaultProvider = useCallback((): string => {
     const preferred = preferredServerRef.current;
-    if (preferred === "vidking" && vidkingFallbackUrl) return "vidking";
-    if (preferred === "megaplay") return "megaplay";
-    return startWithVidking && vidkingFallbackUrl ? "vidking" : "megaplay";
-  }, [startWithVidking, vidkingFallbackUrl]);
+    if (preferred) {
+      if (preferred === VIDKING_ID && vidkingFallbackUrl) return VIDKING_ID;
+      if (preferred === MEGAPLAY_ID && hasMegaplay) return MEGAPLAY_ID;
+      if (availableExtras.some((server) => server.id === preferred)) {
+        return preferred;
+      }
+    }
+    if (startWithVidking && vidkingFallbackUrl) return VIDKING_ID;
+    return firstAvailableId;
+  }, [
+    availableExtras,
+    firstAvailableId,
+    hasMegaplay,
+    startWithVidking,
+    vidkingFallbackUrl
+  ]);
 
   useEffect(() => {
     try {
@@ -78,28 +119,38 @@ export const MegaplayPlayer = ({
       if (stored === "sub" && hasSub) setLanguage("sub");
       if (stored === "dub" && hasDub) setLanguage("dub");
       const storedServer = window.localStorage.getItem(SERVER_KEY);
-      if (storedServer === "vidking" || storedServer === "megaplay") {
-        preferredServerRef.current = storedServer;
-      }
+      if (storedServer) preferredServerRef.current = storedServer;
     } catch {
       // ignore
     }
   }, [hasSub, hasDub]);
 
-  const languageUrls = useMemo(
+  const megaplayLanguageUrls = useMemo(
     () => applyMegaplayLanguage(embedUrls, language),
     [embedUrls, language]
   );
 
-  const activeSrc =
-    activeProvider === "vidking"
-      ? (vidkingFallbackUrl ?? "")
-      : (languageUrls[sourceIndex] ?? languageUrls[0] ?? "");
+  // URLs for whichever server is active, with the sub/dub path applied where
+  // the provider supports it.
+  const activeUrls = useMemo((): string[] => {
+    if (activeProvider === VIDKING_ID) {
+      return vidkingFallbackUrl ? [vidkingFallbackUrl] : [];
+    }
+    if (activeProvider === MEGAPLAY_ID) return megaplayLanguageUrls;
+    if (activeExtra) {
+      return activeExtra.supportsLanguageToggle
+        ? applyMegaplayLanguage(activeExtra.urls, language)
+        : activeExtra.urls;
+    }
+    return [];
+  }, [activeProvider, activeExtra, language, megaplayLanguageUrls, vidkingFallbackUrl]);
 
-  const clearVidkingStallTimer = useCallback((): void => {
-    if (vidkingStallTimerRef.current != null) {
-      window.clearTimeout(vidkingStallTimerRef.current);
-      vidkingStallTimerRef.current = null;
+  const activeSrc = activeUrls[sourceIndex] ?? activeUrls[0] ?? "";
+
+  const clearStallTimer = useCallback((): void => {
+    if (stallTimerRef.current != null) {
+      window.clearTimeout(stallTimerRef.current);
+      stallTimerRef.current = null;
     }
   }, []);
 
@@ -111,12 +162,12 @@ export const MegaplayPlayer = ({
 
   const switchToVidkingFallback = useCallback((): boolean => {
     if (!vidkingFallbackUrl) return false;
-    setActiveProvider("vidking");
+    setActiveProvider(VIDKING_ID);
     setSourceIndex(0);
     setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
-    vidkingProgressRef.current = false;
+    directProgressRef.current = false;
     onActiveSrcChange?.(vidkingFallbackUrl);
     return true;
   }, [onActiveSrcChange, vidkingFallbackUrl]);
@@ -127,9 +178,9 @@ export const MegaplayPlayer = ({
     setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
-    vidkingProgressRef.current = false;
-    clearVidkingStallTimer();
-  }, [clearVidkingStallTimer, languageUrls, resolveDefaultProvider]);
+    directProgressRef.current = false;
+    clearStallTimer();
+  }, [clearStallTimer, megaplayLanguageUrls, resolveDefaultProvider]);
 
   useEffect(() => {
     probingRef.current = false;
@@ -142,28 +193,32 @@ export const MegaplayPlayer = ({
   }, [activeSrc, onActiveSrcChange]);
 
   const tryNextSource = useCallback((): void => {
-    if (activeProvider === "vidking") {
+    if (activeProvider === VIDKING_ID) {
       markPlaybackFailed();
       return;
     }
 
     setSourceIndex((current) => {
       const next = current + 1;
-      if (next < languageUrls.length) return next;
-      if (switchToVidkingFallback()) return current;
+      if (next < activeUrls.length) return next;
+      // MegaPlay exhausts to the Vidking fallback to preserve the original
+      // anime fallback chain; other servers just surface the error panel.
+      if (activeProvider === MEGAPLAY_ID && switchToVidkingFallback()) {
+        return current;
+      }
       markPlaybackFailed();
       return current;
     });
   }, [
     activeProvider,
-    languageUrls.length,
+    activeUrls.length,
     markPlaybackFailed,
     switchToVidkingFallback
   ]);
 
   const probeCurrentSource = useCallback(async (): Promise<void> => {
     if (
-      activeProvider !== "megaplay" ||
+      activeProvider !== MEGAPLAY_ID ||
       !activeSrc ||
       probingRef.current ||
       playbackFailed
@@ -194,9 +249,11 @@ export const MegaplayPlayer = ({
       if (!parsed) return;
 
       if (parsed.kind === "progress" || parsed.kind === "complete") {
-        if (activeProvider === "vidking") {
-          vidkingProgressRef.current = true;
-          clearVidkingStallTimer();
+        // Any non-MegaPlay (direct iframe) server clears its stall watchdog as
+        // soon as it reports progress; MegaPlay relies on the server probe.
+        if (activeProvider !== MEGAPLAY_ID) {
+          directProgressRef.current = true;
+          clearStallTimer();
         }
         return;
       }
@@ -206,27 +263,27 @@ export const MegaplayPlayer = ({
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [activeProvider, clearVidkingStallTimer, tryNextSource]);
+  }, [activeProvider, clearStallTimer, tryNextSource]);
 
   useEffect(() => {
-    clearVidkingStallTimer();
-    if (activeProvider !== "vidking" || !activeSrc || playbackFailed) return;
+    clearStallTimer();
+    if (activeProvider === MEGAPLAY_ID || !activeSrc || playbackFailed) return;
 
-    vidkingStallTimerRef.current = window.setTimeout(() => {
-      if (!vidkingProgressRef.current) markPlaybackFailed();
-    }, VIDKING_STALL_MS);
+    stallTimerRef.current = window.setTimeout(() => {
+      if (!directProgressRef.current) markPlaybackFailed();
+    }, DIRECT_STALL_MS);
 
-    return clearVidkingStallTimer;
+    return clearStallTimer;
   }, [
     activeProvider,
     activeSrc,
-    clearVidkingStallTimer,
+    clearStallTimer,
     markPlaybackFailed,
     playbackFailed
   ]);
 
   const selectLanguage = (next: MegaplayLanguage): void => {
-    if (activeProvider === "vidking") return;
+    if (!subDubApplicable) return;
     setLanguage(next);
     setSuggestAlternateLanguage(false);
     try {
@@ -236,9 +293,17 @@ export const MegaplayPlayer = ({
     }
   };
 
-  const selectServer = (next: StreamProvider): void => {
+  const selectServer = (next: string): void => {
     if (next === activeProvider) return;
-    if (next === "vidking" && !vidkingFallbackUrl) return;
+    if (next === VIDKING_ID && !vidkingFallbackUrl) return;
+    if (next === MEGAPLAY_ID && !hasMegaplay) return;
+    if (
+      next !== VIDKING_ID &&
+      next !== MEGAPLAY_ID &&
+      !availableExtras.some((server) => server.id === next)
+    ) {
+      return;
+    }
     preferredServerRef.current = next;
     try {
       window.localStorage.setItem(SERVER_KEY, next);
@@ -250,7 +315,7 @@ export const MegaplayPlayer = ({
     setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
-    vidkingProgressRef.current = false;
+    directProgressRef.current = false;
   };
 
   const alternateLanguage: MegaplayLanguage | null =
@@ -265,9 +330,12 @@ export const MegaplayPlayer = ({
       ? (`/anime/${titleId}/watch?e=${nextEpisode}` as Route)
       : null;
 
-  const sourceLabel = activeProvider === "vidking" ? "Vidking" : "MegaPlay";
-  const subDubApplicable = activeProvider === "megaplay";
-  const hasVidkingFallback = Boolean(vidkingFallbackUrl);
+  const activeLabel =
+    activeProvider === VIDKING_ID
+      ? "Vidking"
+      : activeProvider === MEGAPLAY_ID
+        ? "MegaPlay"
+        : (activeExtra?.label ?? activeProvider);
 
   return (
     <div className="space-y-3">
@@ -277,7 +345,7 @@ export const MegaplayPlayer = ({
           poster={poster}
           titleId={titleId}
           onEmbedLoad={() => {
-            if (activeProvider === "megaplay") {
+            if (activeProvider === MEGAPLAY_ID) {
               void probeCurrentSource();
             }
           }}
@@ -288,11 +356,8 @@ export const MegaplayPlayer = ({
             Playback unavailable for this episode.
           </p>
           <p className="text-xs text-fg-muted">
-            {hasVidkingFallback && subDubApplicable
-              ? "MegaPlay could not load this episode and the Vidking fallback also failed. Try another episode or check back later."
-              : hasVidkingFallback
-                ? "Vidking could not play this episode. Try another episode or check back later."
-                : "MegaPlay could not play this episode and no Vidking match was found. Try another episode or check back later."}
+            This server could not load the episode. Try another server above, a
+            different audio track, or another episode.
           </p>
         </div>
       )}
@@ -304,7 +369,7 @@ export const MegaplayPlayer = ({
               ? `This episode may be available in ${
                   alternateLanguage === "dub" ? "dub" : "sub"
                 } instead.`
-              : "Try another audio track, episode, or come back later."}
+              : "Try another server, audio track, or episode."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {suggestAlternateLanguage &&
@@ -343,7 +408,7 @@ export const MegaplayPlayer = ({
             Now playing
           </p>
           <p className="text-sm font-medium text-fg">
-            {sourceLabel}
+            {activeLabel}
             {subDubApplicable ? (
               <span className="text-fg-muted">
                 {"  ·  "}
@@ -382,7 +447,7 @@ export const MegaplayPlayer = ({
           </Button>
           {!subDubApplicable && (
             <span className="text-xs text-fg-faint">
-              Set audio inside the Vidking player controls
+              Set audio inside the {activeLabel} player controls
             </span>
           )}
         </div>
@@ -394,17 +459,45 @@ export const MegaplayPlayer = ({
           <Button
             type="button"
             size="sm"
-            variant={activeProvider === "megaplay" ? "primary" : "outline"}
-            onClick={() => selectServer("megaplay")}
+            variant={activeProvider === MEGAPLAY_ID ? "primary" : "outline"}
+            disabled={!hasMegaplay}
+            onClick={() => selectServer(MEGAPLAY_ID)}
+            className={cn(!hasMegaplay && "opacity-50")}
+            title={
+              hasMegaplay
+                ? "MegaPlay catalog stream (Sub/Dub tracks)"
+                : "No MegaPlay match for this episode"
+            }
           >
             MegaPlay
           </Button>
+          {extraServers.map((server) => {
+            const available = server.urls.length > 0;
+            return (
+              <Button
+                key={server.id}
+                type="button"
+                size="sm"
+                variant={activeProvider === server.id ? "primary" : "outline"}
+                disabled={!available}
+                onClick={() => selectServer(server.id)}
+                className={cn(!available && "opacity-50")}
+                title={
+                  available
+                    ? `${server.label} stream (Sub/Dub via path)`
+                    : `No ${server.label} match for this episode`
+                }
+              >
+                {server.label}
+              </Button>
+            );
+          })}
           <Button
             type="button"
             size="sm"
-            variant={activeProvider === "vidking" ? "primary" : "outline"}
+            variant={activeProvider === VIDKING_ID ? "primary" : "outline"}
             disabled={!hasVidkingFallback}
-            onClick={() => selectServer("vidking")}
+            onClick={() => selectServer(VIDKING_ID)}
             className={cn(!hasVidkingFallback && "opacity-50")}
             title={
               hasVidkingFallback
@@ -417,9 +510,9 @@ export const MegaplayPlayer = ({
         </div>
 
         <p className="text-xs text-fg-faint">
-          MegaPlay carries separate Sub and Dub tracks. Quality, captions, and
-          any extra audio tracks can also be changed from the player&apos;s own
-          settings (gear) menu.
+          MegaPlay and the other anime servers carry separate Sub and Dub
+          tracks. Quality, captions, and any extra audio tracks can also be
+          changed from the player&apos;s own settings (gear) menu.
         </p>
       </div>
     </div>

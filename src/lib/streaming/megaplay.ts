@@ -29,7 +29,7 @@ const buildUrl = (mode: EmbedMode, parts: string[]): string =>
   `${MEGAPLAY_BASE}/stream/${parts.join("/")}`;
 
 const applyLanguage = (url: string, language: MegaplayLanguage): string =>
-  url.replace(/\/(sub|dub)$/, `/${language}`);
+  url.replace(/\/(sub|dub)(?=$|\?)/, `/${language}`);
 
 /**
  * Build every MegaPlay embed URL we can derive for an episode, in priority order.

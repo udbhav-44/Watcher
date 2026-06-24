@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
 import { MegaplayPlayer } from "@/components/player/megaplay-player";
+import type { AnimeExtraServer } from "@/lib/streaming/animeServers";
 
 type Props = {
   titleId: string;
@@ -15,6 +16,7 @@ type Props = {
   embedUrls: string[];
   vidkingFallbackUrl?: string | null;
   startWithVidking?: boolean;
+  extraServers?: AnimeExtraServer[];
   hasSub: boolean;
   hasDub: boolean;
   episodeLabel?: string | null;
@@ -31,6 +33,7 @@ export const AnimePlayerSection = ({
   embedUrls,
   vidkingFallbackUrl,
   startWithVidking = false,
+  extraServers = [],
   hasSub,
   hasDub,
   episodeLabel,
@@ -56,6 +59,7 @@ export const AnimePlayerSection = ({
         embedUrls={embedUrls}
         vidkingFallbackUrl={vidkingFallbackUrl}
         startWithVidking={startWithVidking}
+        extraServers={extraServers}
         poster={poster}
         titleId={titleId}
         hasSub={hasSub}

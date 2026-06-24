@@ -17,7 +17,11 @@ const connectSrc = [
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
-  "frame-src 'self' https://megaplay.buzz https://*.megaplay.buzz https:",
+  // Embeddable provider iframes. `https:` already permits all of these, but the
+  // named hosts document exactly which aggregators we surface as servers:
+  // MegaPlay (anime), Vidking (movie/TV/anime), plus the direct-iframe family
+  // VidFast / VidLink / Vidsrc.cc / SupaPlay (see providerHosts.ts).
+  "frame-src 'self' https://megaplay.buzz https://*.megaplay.buzz https://www.vidking.net https://vidfast.pro https://vidlink.pro https://vidsrc.cc https://supaplay.fun https:",
   "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com https://cdn.anipixcdn.co https://*.anipixcdn.co",
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",

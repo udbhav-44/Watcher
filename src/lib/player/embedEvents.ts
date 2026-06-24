@@ -62,15 +62,24 @@ const parseNestedPlayerEvent = (payload: RawMessage): {
     payload.data && typeof payload.data === "object"
       ? (payload.data as RawMessage)
       : null;
-  const eventName = String(
-    payload.event ?? payload.type ?? data?.event ?? data?.type ?? ""
-  ).toLowerCase();
+  // Different providers nest the event name differently: Vidking uses
+  // `timeupdate`/`ended`, Vidsrc.cc uses `time`/`complete` (wrapped under a
+  // `PLAYER_EVENT` type), VidLink uses `timeupdate`/`ended`. Inspect every
+  // candidate slot rather than only the first non-empty one so a `complete`
+  // sitting in `data.event` isn't masked by `type: "PLAYER_EVENT"`.
+  const eventNames = [
+    payload.event,
+    payload.type,
+    data?.event,
+    data?.type
+  ].map((value) => String(value ?? "").toLowerCase());
 
-  if (
-    eventName.includes("complete") ||
-    eventName.includes("ended") ||
-    eventName === "finish"
-  ) {
+  const indicatesCompletion = eventNames.some(
+    (name) =>
+      name.includes("complete") || name.includes("ended") || name === "finish"
+  );
+
+  if (indicatesCompletion) {
     return { kind: "complete" };
   }
 

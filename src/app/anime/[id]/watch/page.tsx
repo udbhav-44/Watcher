@@ -6,6 +6,7 @@ import { AnimePlayerSection } from "@/components/player/anime-player-section";
 import { AnimeWatchSession } from "@/components/player/anime-watch-session";
 import { isAnimeTitleId } from "@/lib/catalog/titleId";
 import { getAnimeDetailByTitleId } from "@/lib/data/anime";
+import { buildAnimeExtraServers } from "@/lib/streaming/animeServers";
 import {
   formatAnimeEpisodeLabel,
   resolveMegaplayEmbedUrls
@@ -70,12 +71,25 @@ export default async function AnimeWatchPage({
 
   const embedUrls = megaplayResult.urls;
 
-  if (embedUrls.length === 0 && !vidkingFallback) return notFound();
+  const extraServers = currentEpisode
+    ? buildAnimeExtraServers({
+        episodeNumber: currentEpisode.number,
+        episodeEmbedId: currentEpisode.episodeEmbedId,
+        malId: anime.malId,
+        aniId: anime.aniId
+      })
+    : [];
+  const firstExtraUrl = extraServers.find((server) => server.urls.length > 0)
+    ?.urls[0];
+
+  if (embedUrls.length === 0 && !vidkingFallback && !firstExtraUrl) {
+    return notFound();
+  }
 
   const startWithVidking = !megaplayResult.hasWorking && Boolean(vidkingFallback);
   const embedUrl = startWithVidking
     ? (vidkingFallback?.url ?? "")
-    : (embedUrls[0] ?? vidkingFallback?.url ?? "");
+    : (embedUrls[0] ?? firstExtraUrl ?? vidkingFallback?.url ?? "");
   const episodeLabel = formatAnimeEpisodeLabel(
     episodeNumber,
     currentEpisode?.title
@@ -96,6 +110,7 @@ export default async function AnimeWatchPage({
             embedUrls={embedUrls}
             vidkingFallbackUrl={vidkingFallback?.url ?? null}
             startWithVidking={startWithVidking}
+            extraServers={extraServers}
             hasSub={currentEpisode?.hasSub ?? false}
             hasDub={currentEpisode?.hasDub ?? false}
             episodeLabel={episodeLabel}
