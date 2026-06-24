@@ -9,7 +9,7 @@ type Props = {
   title: string;
   src: string;
   poster?: string | null;
-  mediaType: "movie" | "tv";
+  mediaType: "movie" | "tv" | "anime";
   season?: number | null;
   episode?: number | null;
   episodeName?: string | null;

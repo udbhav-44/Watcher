@@ -6,6 +6,10 @@ import { Pause, Play, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { watchHrefFor } from "@/lib/catalog/titleId";
+import {
+  readAutoplayNextPreference,
+  AUTOPLAY_NEXT_KEY
+} from "@/lib/player/embedEvents";
 
 type Props = {
   titleId: string;
@@ -15,15 +19,13 @@ type Props = {
   nextEpisode: number | null;
   nextEpisodeName: string | null;
   nextEpisodeStillUrl: string | null;
-  durationMinutes: number | null;
+  /** Set when the embed player signals natural end-of-episode. */
+  episodeEnded?: boolean;
+  /** Query-param style for anime (episode only, no season). */
+  nextHref?: string | null;
 };
 
 const COUNTDOWN_SECONDS = 10;
-
-const startThresholdMs = (durationMinutes: number | null): number => {
-  if (!durationMinutes || durationMinutes < 5) return 30 * 60 * 1000;
-  return Math.max(5 * 60 * 1000, (durationMinutes - 1) * 60 * 1000);
-};
 
 export const NextEpisodeOverlay = ({
   titleId,
@@ -33,28 +35,36 @@ export const NextEpisodeOverlay = ({
   nextEpisode,
   nextEpisodeName,
   nextEpisodeStillUrl,
-  durationMinutes
+  episodeEnded = false,
+  nextHref
 }: Props): JSX.Element | null => {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [paused, setPaused] = useState(false);
+  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
 
   useEffect(() => {
-    if (!nextSeason || !nextEpisode) return undefined;
-    const showAt = startThresholdMs(durationMinutes);
-    const timer = window.setTimeout(() => setVisible(true), showAt);
-    return () => window.clearTimeout(timer);
-  }, [durationMinutes, nextEpisode, nextSeason, currentSeason, currentEpisode]);
+    setAutoplayEnabled(readAutoplayNextPreference());
+  }, []);
 
   useEffect(() => {
-    if (!visible || paused) return undefined;
+    if (!episodeEnded || !nextSeason || !nextEpisode) return;
+    setVisible(true);
+    setCountdown(COUNTDOWN_SECONDS);
+    setPaused(false);
+  }, [episodeEnded, nextSeason, nextEpisode, currentSeason, currentEpisode]);
+
+  const targetHref =
+    nextHref ??
+    (nextSeason && nextEpisode
+      ? `${watchHrefFor(titleId)}?s=${nextSeason}&e=${nextEpisode}`
+      : null);
+
+  useEffect(() => {
+    if (!visible || paused || !autoplayEnabled || !targetHref) return undefined;
     if (countdown <= 0) {
-      if (nextSeason && nextEpisode) {
-        router.push(
-          `${watchHrefFor(titleId)}?s=${nextSeason}&e=${nextEpisode}`
-        );
-      }
+      router.push(targetHref as Parameters<typeof router.push>[0]);
       return undefined;
     }
     const timer = window.setTimeout(
@@ -62,17 +72,24 @@ export const NextEpisodeOverlay = ({
       1000
     );
     return () => window.clearTimeout(timer);
-  }, [
-    countdown,
-    nextEpisode,
-    nextSeason,
-    paused,
-    router,
-    titleId,
-    visible
-  ]);
+  }, [countdown, paused, autoplayEnabled, router, targetHref, visible]);
 
-  if (!visible || !nextSeason || !nextEpisode) return null;
+  const toggleAutoplay = (): void => {
+    const next = !autoplayEnabled;
+    setAutoplayEnabled(next);
+    try {
+      window.localStorage.setItem(AUTOPLAY_NEXT_KEY, String(next));
+    } catch {
+      // ignore
+    }
+  };
+
+  if (!visible || !nextSeason || !nextEpisode || !targetHref) return null;
+
+  const label =
+    nextSeason === currentSeason
+      ? `E${nextEpisode}`
+      : `S${nextSeason}  ·  E${nextEpisode}`;
 
   return (
     <div className="relative flex flex-wrap items-center gap-4 rounded-lg border border-accent/40 bg-overlay p-4 shadow-lift backdrop-blur">
@@ -98,15 +115,18 @@ export const NextEpisodeOverlay = ({
       </div>
       <div className="flex-1 space-y-1">
         <p className="text-xs tracking-[0.18em] text-accent uppercase tabular-nums">
-          Next episode in {countdown}s
+          {autoplayEnabled && !paused
+            ? `Next episode in ${countdown}s`
+            : "Next episode"}
         </p>
         <p className="text-sm font-medium text-fg">
-          S{nextSeason}  ·  E{nextEpisode}
+          {label}
           {nextEpisodeName ? `  ·  ${nextEpisodeName}` : ""}
         </p>
         <p className="text-xs text-fg-muted">
-          Auto-playing soon. Skip the wait or pause to stay on the current
-          episode.
+          {autoplayEnabled
+            ? "Auto-playing when the episode ends. Pause or disable autoplay to stay put."
+            : "Autoplay is off. Use Watch now to continue."}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -128,13 +148,14 @@ export const NextEpisodeOverlay = ({
             </>
           )}
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={toggleAutoplay}>
+          {autoplayEnabled ? "Disable autoplay" : "Enable autoplay"}
+        </Button>
         <Button
           type="button"
           size="sm"
           onClick={() =>
-            router.push(
-              `${watchHrefFor(titleId)}?s=${nextSeason}&e=${nextEpisode}`
-            )
+            router.push(targetHref as Parameters<typeof router.push>[0])
           }
         >
           Watch now

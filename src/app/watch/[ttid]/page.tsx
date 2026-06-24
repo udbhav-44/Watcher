@@ -5,7 +5,7 @@ import { ArrowLeft, Play } from "lucide-react";
 import { MovieRail } from "@/components/movies/movie-rail";
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
-import { isTvTitleId } from "@/lib/catalog/titleId";
+import { isAnimeTitleId, isTvTitleId } from "@/lib/catalog/titleId";
 import {
   getFeaturedRails,
   getMovieByTitleId,
@@ -21,6 +21,10 @@ type Props = {
 export default async function WatchPage({
   params
 }: Props): Promise<JSX.Element> {
+  if (isAnimeTitleId(params.ttid)) {
+    redirect(`/anime/${params.ttid}/watch`);
+  }
+
   if (isTvTitleId(params.ttid)) {
     redirect(`/tv/${params.ttid}/watch`);
   }

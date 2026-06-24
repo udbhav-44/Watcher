@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { Menu, Search, Tv, X } from "lucide-react";
 
@@ -10,17 +11,18 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { clientEnv } from "@/lib/config/clientEnv";
 import { cn } from "@/lib/utils";
 
-const links = [
+const links: ReadonlyArray<{ href: Route; label: string }> = [
   { href: "/", label: "Home" },
   { href: "/browse", label: "Movies" },
   { href: "/tv", label: "TV" },
+  { href: "/anime" as Route, label: "Anime" },
   { href: "/new", label: "New" },
   { href: "/calendar", label: "Calendar" },
   { href: "/search", label: "Search" },
   { href: "/me/collections", label: "Collections" }
-] as const;
+];
 
-const adminLink = { href: "/admin/dashboard", label: "Admin" } as const;
+const adminLink = { href: "/admin/dashboard" as Route, label: "Admin" };
 
 export const Navbar = (): JSX.Element => {
   const pathname = usePathname();

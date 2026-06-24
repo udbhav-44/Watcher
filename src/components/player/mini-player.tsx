@@ -33,7 +33,9 @@ const isWatchPath = (pathname: string | null, titleId: string): boolean => {
   return (
     pathname === `/watch/${titleId}` ||
     pathname === `/tv/${titleId}/watch` ||
-    pathname.startsWith(`/tv/${titleId}/watch`)
+    pathname.startsWith(`/tv/${titleId}/watch`) ||
+    pathname === `/anime/${titleId}/watch` ||
+    pathname.startsWith(`/anime/${titleId}/watch`)
   );
 };
 
@@ -193,7 +195,9 @@ export const MiniPlayerHost = (): JSX.Element | null => {
   const watchHref = `${watchHrefFor(active.titleId)}${
     active.mediaType === "tv" && active.season && active.episode
       ? `?s=${active.season}&e=${active.episode}`
-      : ""
+      : active.mediaType === "anime" && active.episode
+        ? `?e=${active.episode}`
+        : ""
   }`;
 
   return (
@@ -241,7 +245,9 @@ export const MiniPlayerHost = (): JSX.Element | null => {
           {active.title}
           {active.mediaType === "tv" && active.season && active.episode
             ? `  ·  S${active.season}E${active.episode}`
-            : ""}
+            : active.mediaType === "anime" && active.episode
+              ? `  ·  Ep ${active.episode}`
+              : ""}
         </Link>
         <div className="flex items-center gap-1">
           <button

@@ -1,4 +1,4 @@
-export type MediaType = "movie" | "tv";
+export type MediaType = "movie" | "tv" | "anime";
 
 export type CastMember = {
   name: string;
@@ -60,4 +60,22 @@ export type TvEpisodeSummary = {
 export type TvDetail = MovieCard & {
   mediaType: "tv";
   seasons: TvSeasonSummary[];
+};
+
+export type AnimeEpisodeSummary = {
+  id: number;
+  number: number;
+  title: string;
+  jpTitle?: string | null;
+  episodeEmbedId?: string | null;
+  hasSub: boolean;
+  hasDub: boolean;
+};
+
+export type AnimeDetail = MovieCard & {
+  mediaType: "anime";
+  malId?: string | null;
+  aniId?: string | null;
+  status?: string | null;
+  episodes: AnimeEpisodeSummary[];
 };

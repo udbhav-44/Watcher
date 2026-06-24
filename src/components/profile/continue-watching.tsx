@@ -12,13 +12,35 @@ type WatchEvent = {
   id: string;
   titleId: string;
   progressPercent: number;
-  mediaType?: "movie" | "tv";
+  completed?: boolean;
+  mediaType?: "movie" | "tv" | "anime";
   season?: number | null;
   episode?: number | null;
 };
 
 type ResumeItem = WatchEvent & {
   movie?: MovieCardType;
+};
+
+const resumeKey = (event: WatchEvent): string => {
+  if (event.mediaType === "tv" && event.season && event.episode) {
+    return `${event.titleId}:${event.season}:${event.episode}`;
+  }
+  if (event.mediaType === "anime" && event.episode) {
+    return `${event.titleId}:e${event.episode}`;
+  }
+  return event.titleId;
+};
+
+const resumeHref = (item: ResumeItem): string => {
+  const base = watchHrefFor(item.titleId);
+  if (item.mediaType === "tv" && item.season && item.episode) {
+    return `${base}?s=${item.season}&e=${item.episode}`;
+  }
+  if (item.mediaType === "anime" && item.episode) {
+    return `${base}?e=${item.episode}`;
+  }
+  return base;
 };
 
 export const ContinueWatching = (): JSX.Element | null => {
@@ -33,9 +55,13 @@ export const ContinueWatching = (): JSX.Element | null => {
         const seen = new Set<string>();
         const filtered = (data.events ?? [])
           .filter((event) => {
-            if (event.progressPercent <= 5 || event.progressPercent >= 95) return false;
-            if (seen.has(event.titleId)) return false;
-            seen.add(event.titleId);
+            if (event.completed) return false;
+            if (event.progressPercent <= 5 || event.progressPercent >= 90) {
+              return false;
+            }
+            const key = resumeKey(event);
+            if (seen.has(key)) return false;
+            seen.add(key);
             return true;
           })
           .slice(0, 8);
@@ -98,17 +124,17 @@ export const ContinueWatching = (): JSX.Element | null => {
                 )
               : null;
           const isTv = item.mediaType === "tv" && item.season && item.episode;
+          const isAnime = item.mediaType === "anime" && item.episode;
           const episodeLabel = isTv
             ? `S${item.season}  ·  E${item.episode}`
-            : null;
-          const baseHref = watchHrefFor(item.titleId);
-          const resumeHref = (
-            isTv ? `${baseHref}?s=${item.season}&e=${item.episode}` : baseHref
-          ) as Parameters<typeof Link>[0]["href"];
+            : isAnime
+              ? `Episode ${item.episode}`
+              : null;
+          const href = resumeHref(item) as Parameters<typeof Link>[0]["href"];
           return (
             <Link
               key={item.id}
-              href={resumeHref}
+              href={href}
               className="group relative w-[260px] shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition outline-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70"
             >
               <div className="relative aspect-video w-full overflow-hidden bg-surface-3">

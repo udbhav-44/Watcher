@@ -9,6 +9,7 @@ const scriptSrc = [
 const connectSrc = [
   "'self'",
   "https://api.themoviedb.org",
+  "https://anikotoapi.site",
   "https://*.sentry.io",
   "https:",
   ...(isDevelopment ? ["ws://localhost:*", "http://localhost:*"] : [])
@@ -16,8 +17,8 @@ const connectSrc = [
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
-  "frame-src 'self' https:",
-  "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com",
+  "frame-src 'self' https://megaplay.buzz https://*.megaplay.buzz https:",
+  "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com https://cdn.anipixcdn.co https://*.anipixcdn.co",
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "media-src 'self' https:",
@@ -57,7 +58,8 @@ const nextConfig = {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "m.media-amazon.com" },
-      { protocol: "https", hostname: "image.tmdb.org" }
+      { protocol: "https", hostname: "image.tmdb.org" },
+      { protocol: "https", hostname: "cdn.anipixcdn.co" }
     ]
   }
 };

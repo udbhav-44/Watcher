@@ -15,7 +15,7 @@ const eventSchema = z.object({
   completed: z.boolean().default(false),
   season: z.number().int().positive().optional(),
   episode: z.number().int().positive().optional(),
-  mediaType: z.enum(["movie", "tv"]).optional()
+  mediaType: z.enum(["movie", "tv", "anime"]).optional()
 });
 
 export async function GET(request: Request): Promise<Response> {

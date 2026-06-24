@@ -1,6 +1,7 @@
 const hostRules = [
   "playimdb.domains",
-  "vidking.net"
+  "vidking.net",
+  "megaplay.buzz"
 ] as const;
 
 export const isAllowedProviderHost = (hostname: string): boolean => {

@@ -4,9 +4,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
-import { EpisodeWatchRecorder } from "@/components/player/episode-watch-recorder";
-import { NextEpisodeOverlay } from "@/components/player/next-episode-overlay";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
+import { TvWatchSession } from "@/components/player/tv-watch-session";
 import { SkipIntroControls } from "@/components/player/skip-intro-controls";
 import { isTvTitleId, tmdbIdFromTitleId } from "@/lib/catalog/titleId";
 import { getSeasonEpisodes, getTvDetailByTitleId } from "@/lib/data/tv";
@@ -102,12 +101,6 @@ export default async function TvWatchPage({
 
   return (
     <div className="space-y-6">
-      <EpisodeWatchRecorder
-        titleId={show.titleId}
-        mediaType="tv"
-        season={season}
-        episode={episode}
-      />
       <ActivePlayerBinder
         titleId={show.titleId}
         title={show.title}
@@ -158,17 +151,14 @@ export default async function TvWatchPage({
               </p>
             )}
           </div>
-          <NextEpisodeOverlay
+          <TvWatchSession
             titleId={show.titleId}
-            currentSeason={season}
-            currentEpisode={episode}
+            season={season}
+            episode={episode}
             nextSeason={nextSeason}
             nextEpisode={nextEpisode}
             nextEpisodeName={nextEpisodeName}
             nextEpisodeStillUrl={nextEpisodeStillUrl}
-            durationMinutes={
-              show.durationMinutes ?? currentEpisode?.runtime ?? null
-            }
           />
           <SkipIntroControls
             titleId={show.titleId}
