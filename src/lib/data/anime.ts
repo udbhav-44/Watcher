@@ -89,6 +89,7 @@ export const getAnimeDetailByTitleId = async (
     ...card,
     mediaType: "anime",
     numberOfEpisodes: episodes.length > 0 ? episodes.length : card.numberOfEpisodes,
+    alternativeTitle: series.anime.alternative ?? null,
     malId: series.anime.mal_id ?? null,
     aniId: series.anime.ani_id ?? null,
     status: series.anime.status ?? null,

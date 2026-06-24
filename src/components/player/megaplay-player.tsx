@@ -14,33 +14,43 @@ import {
 } from "@/lib/streaming/megaplay";
 
 const LANGUAGE_KEY = "campusstream:anime-language";
+const VIDKING_STALL_MS = 25_000;
+
+type StreamProvider = "megaplay" | "vidking";
 
 type Props = {
   embedUrls: string[];
+  vidkingFallbackUrl?: string | null;
   poster?: string | null;
   titleId: string;
   hasSub: boolean;
   hasDub: boolean;
   episodeLabel?: string | null;
   nextEpisode?: number | null;
+  onActiveSrcChange?: (src: string) => void;
 };
 
 export const MegaplayPlayer = ({
   embedUrls,
+  vidkingFallbackUrl = null,
   poster,
   titleId,
   hasSub,
   hasDub,
   episodeLabel,
-  nextEpisode = null
+  nextEpisode = null,
+  onActiveSrcChange
 }: Props): JSX.Element => {
   const defaultLanguage: MegaplayLanguage = hasSub ? "sub" : "dub";
   const [language, setLanguage] = useState<MegaplayLanguage>(defaultLanguage);
   const [sourceIndex, setSourceIndex] = useState(0);
-  const [allSourcesFailed, setAllSourcesFailed] = useState(false);
+  const [activeProvider, setActiveProvider] = useState<StreamProvider>("megaplay");
+  const [playbackFailed, setPlaybackFailed] = useState(false);
   const [suggestAlternateLanguage, setSuggestAlternateLanguage] =
     useState(false);
   const probingRef = useRef(false);
+  const vidkingProgressRef = useRef(false);
+  const vidkingStallTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -57,32 +67,79 @@ export const MegaplayPlayer = ({
     [embedUrls, language]
   );
 
-  const activeSrc = languageUrls[sourceIndex] ?? languageUrls[0] ?? "";
+  const activeSrc =
+    activeProvider === "vidking"
+      ? (vidkingFallbackUrl ?? "")
+      : (languageUrls[sourceIndex] ?? languageUrls[0] ?? "");
+
+  const clearVidkingStallTimer = useCallback((): void => {
+    if (vidkingStallTimerRef.current != null) {
+      window.clearTimeout(vidkingStallTimerRef.current);
+      vidkingStallTimerRef.current = null;
+    }
+  }, []);
+
+  const markPlaybackFailed = useCallback((): void => {
+    setPlaybackFailed(true);
+    if (language === "sub" && hasDub) setSuggestAlternateLanguage(true);
+    if (language === "dub" && hasSub) setSuggestAlternateLanguage(true);
+  }, [language, hasDub, hasSub]);
+
+  const switchToVidkingFallback = useCallback((): boolean => {
+    if (!vidkingFallbackUrl) return false;
+    setActiveProvider("vidking");
+    setSourceIndex(0);
+    setPlaybackFailed(false);
+    setSuggestAlternateLanguage(false);
+    probingRef.current = false;
+    vidkingProgressRef.current = false;
+    onActiveSrcChange?.(vidkingFallbackUrl);
+    return true;
+  }, [onActiveSrcChange, vidkingFallbackUrl]);
 
   useEffect(() => {
     setSourceIndex(0);
-    setAllSourcesFailed(false);
+    setActiveProvider("megaplay");
+    setPlaybackFailed(false);
     setSuggestAlternateLanguage(false);
     probingRef.current = false;
-  }, [languageUrls]);
+    vidkingProgressRef.current = false;
+    clearVidkingStallTimer();
+  }, [clearVidkingStallTimer, languageUrls, vidkingFallbackUrl]);
 
   useEffect(() => {
     probingRef.current = false;
-  }, [sourceIndex, activeSrc]);
+  }, [sourceIndex, activeSrc, activeProvider]);
 
   const tryNextSource = useCallback((): void => {
+    if (activeProvider === "vidking") {
+      markPlaybackFailed();
+      return;
+    }
+
     setSourceIndex((current) => {
       const next = current + 1;
       if (next < languageUrls.length) return next;
-      setAllSourcesFailed(true);
-      if (language === "sub" && hasDub) setSuggestAlternateLanguage(true);
-      if (language === "dub" && hasSub) setSuggestAlternateLanguage(true);
+      if (switchToVidkingFallback()) return current;
+      markPlaybackFailed();
       return current;
     });
-  }, [language, languageUrls.length, hasDub, hasSub]);
+  }, [
+    activeProvider,
+    languageUrls.length,
+    markPlaybackFailed,
+    switchToVidkingFallback
+  ]);
 
   const probeCurrentSource = useCallback(async (): Promise<void> => {
-    if (!activeSrc || probingRef.current || allSourcesFailed) return;
+    if (
+      activeProvider !== "megaplay" ||
+      !activeSrc ||
+      probingRef.current ||
+      playbackFailed
+    ) {
+      return;
+    }
     probingRef.current = true;
     try {
       const response = await fetch(
@@ -96,19 +153,47 @@ export const MegaplayPlayer = ({
     } finally {
       probingRef.current = false;
     }
-  }, [activeSrc, allSourcesFailed, tryNextSource]);
+  }, [activeProvider, activeSrc, playbackFailed, tryNextSource]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent): void => {
       const parsed = parseEmbedMessage(event.data);
-      if (parsed?.kind === "error") tryNextSource();
+      if (!parsed) return;
+
+      if (parsed.kind === "progress" || parsed.kind === "complete") {
+        if (activeProvider === "vidking") {
+          vidkingProgressRef.current = true;
+          clearVidkingStallTimer();
+        }
+        return;
+      }
+
+      if (parsed.kind === "error") tryNextSource();
     };
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [tryNextSource]);
+  }, [activeProvider, clearVidkingStallTimer, tryNextSource]);
+
+  useEffect(() => {
+    clearVidkingStallTimer();
+    if (activeProvider !== "vidking" || !activeSrc || playbackFailed) return;
+
+    vidkingStallTimerRef.current = window.setTimeout(() => {
+      if (!vidkingProgressRef.current) markPlaybackFailed();
+    }, VIDKING_STALL_MS);
+
+    return clearVidkingStallTimer;
+  }, [
+    activeProvider,
+    activeSrc,
+    clearVidkingStallTimer,
+    markPlaybackFailed,
+    playbackFailed
+  ]);
 
   const selectLanguage = (next: MegaplayLanguage): void => {
+    if (activeProvider === "vidking") return;
     setLanguage(next);
     setSuggestAlternateLanguage(false);
     try {
@@ -130,15 +215,20 @@ export const MegaplayPlayer = ({
       ? (`/anime/${titleId}/watch?e=${nextEpisode}` as Route)
       : null;
 
+  const sourceLabel = activeProvider === "vidking" ? "Vidking" : "MegaPlay";
+  const subDubApplicable = activeProvider === "megaplay";
+
   return (
     <div className="space-y-3">
-      {!allSourcesFailed && activeSrc ? (
+      {!playbackFailed && activeSrc ? (
         <StreamingPlayer
           src={activeSrc}
           poster={poster}
           titleId={titleId}
           onEmbedLoad={() => {
-            void probeCurrentSource();
+            if (activeProvider === "megaplay") {
+              void probeCurrentSource();
+            }
           }}
         />
       ) : (
@@ -148,32 +238,34 @@ export const MegaplayPlayer = ({
             {language === "sub" ? "subtitled" : "dubbed"} stream.
           </p>
           <p className="text-xs text-fg-muted">
-            MegaPlay could not resolve this episode after trying catalog, MAL,
-            and AniList sources.
+            MegaPlay and Vidking could not play this episode. Try another audio
+            track, episode, or check back later.
           </p>
         </div>
       )}
 
-      {allSourcesFailed && (
+      {playbackFailed && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
           <p className="text-sm text-fg">
-            {suggestAlternateLanguage && alternateLanguage
+            {suggestAlternateLanguage && alternateLanguage && subDubApplicable
               ? `This episode may be available in ${
                   alternateLanguage === "dub" ? "dub" : "sub"
                 } instead.`
               : "Try another audio track, episode, or come back later."}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {suggestAlternateLanguage && alternateLanguage && (
-              <Button
-                type="button"
-                size="sm"
-                variant="primary"
-                onClick={() => selectLanguage(alternateLanguage)}
-              >
-                Try {alternateLanguage === "dub" ? "Dub" : "Sub"}
-              </Button>
-            )}
+            {suggestAlternateLanguage &&
+              alternateLanguage &&
+              subDubApplicable && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="primary"
+                  onClick={() => selectLanguage(alternateLanguage)}
+                >
+                  Try {alternateLanguage === "dub" ? "Dub" : "Sub"}
+                </Button>
+              )}
             {nextEpisodeHref && (
               <Link
                 href={nextEpisodeHref}
@@ -195,23 +287,28 @@ export const MegaplayPlayer = ({
       <div className="glass-panel flex flex-wrap items-center justify-between gap-3 rounded-lg p-3">
         <div className="min-w-0">
           <p className="text-xs tracking-[0.18em] text-fg-faint uppercase">
-            Audio
+            {activeProvider === "vidking" ? "Source" : "Audio"}
           </p>
           <p className="text-sm font-medium text-fg">
-            MegaPlay
+            {sourceLabel}
             {episodeLabel ? (
               <span className="text-fg-muted">  ·  {episodeLabel}</span>
             ) : null}
           </p>
+          {activeProvider === "vidking" && (
+            <p className="mt-0.5 text-xs text-fg-faint">
+              Fallback stream via TMDB catalog
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             type="button"
             size="sm"
             variant={language === "sub" ? "primary" : "outline"}
-            disabled={!hasSub}
+            disabled={!hasSub || !subDubApplicable}
             onClick={() => selectLanguage("sub")}
-            className={cn(!hasSub && "opacity-50")}
+            className={cn((!hasSub || !subDubApplicable) && "opacity-50")}
           >
             Sub
           </Button>
@@ -219,9 +316,9 @@ export const MegaplayPlayer = ({
             type="button"
             size="sm"
             variant={language === "dub" ? "primary" : "outline"}
-            disabled={!hasDub}
+            disabled={!hasDub || !subDubApplicable}
             onClick={() => selectLanguage("dub")}
-            className={cn(!hasDub && "opacity-50")}
+            className={cn((!hasDub || !subDubApplicable) && "opacity-50")}
           >
             Dub
           </Button>

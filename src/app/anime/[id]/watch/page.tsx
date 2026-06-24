@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { Route } from "next";
 import { notFound } from "next/navigation";
 
-import { ActivePlayerBinder } from "@/components/player/active-player-binder";
+import { AnimePlayerSection } from "@/components/player/anime-player-section";
 import { AnimeWatchSession } from "@/components/player/anime-watch-session";
-import { MegaplayPlayer } from "@/components/player/megaplay-player";
 import { isAnimeTitleId } from "@/lib/catalog/titleId";
 import { getAnimeDetailByTitleId } from "@/lib/data/anime";
 import {
   formatAnimeEpisodeLabel,
   resolveMegaplayEmbedUrls
 } from "@/lib/streaming/megaplay";
+import { resolveVidkingAnimeFallback } from "@/lib/streaming/vidkingAnime";
 
 type Props = {
   params: { id: string };
@@ -48,20 +48,27 @@ export default async function AnimeWatchPage({
   const nextEpisodeEntry =
     currentIndex >= 0 ? anime.episodes[currentIndex + 1] : null;
 
-  const embedUrls =
-    currentEpisode
-      ? await resolveMegaplayEmbedUrls({
+  const [embedUrls, vidkingFallback] = currentEpisode
+    ? await Promise.all([
+        resolveMegaplayEmbedUrls({
           language: currentEpisode.hasSub ? "sub" : "dub",
           episodeNumber: currentEpisode.number,
           episodeEmbedId: currentEpisode.episodeEmbedId,
           malId: anime.malId,
           aniId: anime.aniId
+        }),
+        resolveVidkingAnimeFallback({
+          title: anime.title,
+          alternativeTitle: anime.alternativeTitle,
+          year: anime.releaseYear,
+          episodeNumber: currentEpisode.number
         })
-      : [];
+      ])
+    : [[], null];
 
-  if (embedUrls.length === 0) return notFound();
+  if (embedUrls.length === 0 && !vidkingFallback) return notFound();
 
-  const embedUrl = embedUrls[0];
+  const embedUrl = embedUrls[0] ?? vidkingFallback?.url ?? "";
   const episodeLabel = formatAnimeEpisodeLabel(
     episodeNumber,
     currentEpisode?.title
@@ -70,22 +77,17 @@ export default async function AnimeWatchPage({
 
   return (
     <div className="space-y-5">
-      <ActivePlayerBinder
-        titleId={anime.titleId}
-        title={anime.title}
-        src={embedUrl}
-        poster={anime.backdropUrl ?? null}
-        mediaType="anime"
-        episode={episodeNumber}
-        episodeName={currentEpisode?.title ?? null}
-      />
-
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
-          <MegaplayPlayer
-            embedUrls={embedUrls}
-            poster={anime.backdropUrl}
+          <AnimePlayerSection
             titleId={anime.titleId}
+            title={anime.title}
+            initialSrc={embedUrl}
+            poster={anime.backdropUrl}
+            episode={episodeNumber}
+            episodeName={currentEpisode?.title ?? null}
+            embedUrls={embedUrls}
+            vidkingFallbackUrl={vidkingFallback?.url ?? null}
             hasSub={currentEpisode?.hasSub ?? false}
             hasDub={currentEpisode?.hasDub ?? false}
             episodeLabel={episodeLabel}

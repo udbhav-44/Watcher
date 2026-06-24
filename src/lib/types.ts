@@ -74,6 +74,7 @@ export type AnimeEpisodeSummary = {
 
 export type AnimeDetail = MovieCard & {
   mediaType: "anime";
+  alternativeTitle?: string | null;
   malId?: string | null;
   aniId?: string | null;
   status?: string | null;
