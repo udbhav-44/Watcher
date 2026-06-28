@@ -18,10 +18,8 @@ const connectSrc = [
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src ${scriptSrc}`,
-  // Embeddable provider iframes. `https:` already permits all of these, but the
-  // named hosts document exactly which aggregators we surface as servers:
-  // Vidking (movie/TV/anime) plus direct-iframe family VidFast / VidLink / Vidsrc.cc.
-  "frame-src 'self' https://www.vidking.net https://vidfast.pro https://vidlink.pro https://vidsrc.cc https:",
+  // Embeddable provider iframes (live-tested aggregators only).
+  "frame-src 'self' https://www.vidking.net https://vidfast.pro https://vidrock.net https://vidcore.org https://vidsrc.cc https:",
   "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com https://cdn.anipixcdn.co https://*.anipixcdn.co https://cdn.myanimelist.net https://*.myanimelist.net",
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",

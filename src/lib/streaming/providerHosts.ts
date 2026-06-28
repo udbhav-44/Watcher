@@ -7,11 +7,8 @@ const probeHostRules = ["playimdb.domains", "vidking.net"] as const;
 
 /**
  * Direct-iframe-only providers. These sit behind Cloudflare and 403 our
- * server-side fetches (see docs/streaming-providers-research.md), so we never
- * probe or proxy them — they are offered purely as manual server choices and
- * loaded straight into the player iframe. They are allowlisted for embedding
- * (CSP frame-src) but deliberately kept out of `providerHostAllowlist` so the
- * readiness check doesn't mark them down for an expected 403.
+ * server-side fetches, so we never probe or proxy them — they are offered purely
+ * as manual server choices and loaded straight into the player iframe.
  */
 const directIframeHostRules = [
   "vidfast.pro",
@@ -21,7 +18,8 @@ const directIframeHostRules = [
   "vidfast.me",
   "vidfast.net",
   "vidfast.xyz",
-  "vidlink.pro",
+  "vidrock.net",
+  "vidcore.org",
   "vidsrc.cc"
 ] as const;
 

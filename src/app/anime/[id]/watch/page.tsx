@@ -8,7 +8,6 @@ import { isAnimeTitleId } from "@/lib/catalog/titleId";
 import { getAnimeDetailByTitleId } from "@/lib/data/anime";
 import { buildAnimeExtraServers } from "@/lib/streaming/animeServers";
 import { formatAnimeEpisodeLabel } from "@/lib/streaming/animeEmbed";
-import { resolveVidkingAnimeFallback } from "@/lib/streaming/vidkingAnime";
 
 type Props = {
   params: { id: string };
@@ -46,8 +45,8 @@ export default async function AnimeWatchPage({
   const nextEpisodeEntry =
     currentIndex >= 0 ? anime.episodes[currentIndex + 1] : null;
 
-  const vidkingFallback = currentEpisode
-    ? await resolveVidkingAnimeFallback({
+  const { servers, defaultServerId } = currentEpisode
+    ? await buildAnimeExtraServers({
         title: anime.title,
         alternativeTitle: anime.alternativeTitle,
         year: anime.releaseYear,
@@ -55,29 +54,18 @@ export default async function AnimeWatchPage({
         aniId: anime.aniId,
         episodeNumber: currentEpisode.number
       })
-    : null;
-
-  const { servers, defaultServerId } = currentEpisode
-    ? await buildAnimeExtraServers({
-        episodeNumber: currentEpisode.number,
-        malId: anime.malId,
-        aniId: anime.aniId
-      })
     : { servers: [], defaultServerId: null };
 
   const defaultServer = servers.find((server) => server.id === defaultServerId);
-  const firstServerUrl =
+  const embedUrl =
     defaultServer?.urls[0] ??
-    servers.find((server) => server.urls.length > 0)?.urls[0];
+    servers.find((server) => server.urls.length > 0)?.urls[0] ??
+    "";
 
-  if (!firstServerUrl && !vidkingFallback) {
+  if (!embedUrl && servers.length === 0) {
     return notFound();
   }
 
-  const startWithVidking = !firstServerUrl && Boolean(vidkingFallback);
-  const embedUrl = startWithVidking
-    ? (vidkingFallback?.url ?? "")
-    : (firstServerUrl ?? vidkingFallback?.url ?? "");
   const episodeLabel = formatAnimeEpisodeLabel(
     episodeNumber,
     currentEpisode?.title
@@ -95,12 +83,8 @@ export default async function AnimeWatchPage({
             poster={anime.backdropUrl}
             episode={episodeNumber}
             episodeName={currentEpisode?.title ?? null}
-            vidkingFallbackUrl={vidkingFallback?.url ?? null}
-            startWithVidking={startWithVidking}
             defaultServerId={defaultServerId}
             servers={servers}
-            hasSub={currentEpisode?.hasSub ?? true}
-            hasDub={currentEpisode?.hasDub ?? true}
             episodeLabel={episodeLabel}
             nextEpisode={nextEpisodeEntry?.number ?? null}
           />

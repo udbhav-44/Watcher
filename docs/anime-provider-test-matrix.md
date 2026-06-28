@@ -1,24 +1,34 @@
-# Anime provider live-test matrix (2026-06-28)
+# Anime provider live-test matrix (2026-06-28, updated)
 
-Tested from CI/dev network via HTTP fetch + browser iframe verification.
-Only providers marked **playable** are wired into the anime server switcher.
+Live-tested from dev network via HTTP fetch. **Only providers marked playable are wired.**
+VidLink removed — passes HTML probe but streams fail or desync in browser.
 
-| Provider | Versatile Mage S7 (62719) | Above Myriads (61642) | Frieren (52991) | One Piece (21) |
+| Provider | Method | Frieren (52991) | Slime S3 (154587 ep12) | One Piece (21) |
 | --- | --- | --- | --- | --- |
-| **SupaPlay** (`s-2` / `mal`) | dead (404) | dead (404) | dead (404) | dead (404) |
-| **Vidsrc.cc** (MAL) | timeout | timeout | timeout | timeout |
-| **VidLink** (MAL) | dead (error page) | dead (error page) | dead (error page) | dead (500) |
-| **Vidking** (TMDB TV) | playable (`70311/7/1`) | no TMDB match | playable (`209867/1/1`) | playable (`37854/1/1`) |
+| **Vidking** (TMDB TV) | `/embed/tv/{tmdb}/{s}/{e}` | playable | playable | playable |
+| **VidFast** | `/tv/{tmdb}/{s}/{e}` | playable HTML | playable HTML | playable HTML |
+| **VidRock** | `/embed/tv/{tmdb}/{s}/{e}` | playable HTML | playable HTML | — |
+| **VidCore** | `/embed/tv/{tmdb}/{s}/{e}` | playable HTML | playable HTML | — |
+| **Vidsrc.cc** | `/v2/embed/tv/{tmdb}/{s}/{e}` | timeout (CF) | timeout | timeout |
+| **VidLink** (MAL) | removed | dead in browser | dead in browser | dead |
+| **SupaPlay / MegaPlay** | removed | dead (404) | dead | dead |
+
+## Anime playback architecture
+
+All anime playback uses the **same TMDB resolver as the TV tab**:
+1. MAL/Jikan catalog → resolve TMDB TV id (title search + MAL/AniList find)
+2. Parse season from title (`Season 7` → season 7)
+3. Build embed URLs via `resolveProviderUrlsFromIdentifier`
+4. Server switcher: Vidking (probed) → VidFast → VidRock → VidCore → Vidsrc.cc
+
+## Subtitles / audio
+
+Subtitle timing is controlled **inside each provider's player** (gear menu).
+We cannot adjust sync from outside cross-origin iframes.
 
 ## API health
 
 | API | Result |
 | --- | --- |
-| **Jikan** (`api.jikan.moe`) | OK (200) — cached server-side |
-| **Anikoto** (`recent-anime`) | OK (200) — cached server-side, secondary rail only |
-
-## Wired in app
-
-- **Vidking** (TMDB resolver + live probe) — default when MAL-keyed providers fail probe
-- **VidLink / Vidsrc.cc** — probed per episode; omitted when probe fails (currently all fail)
-- **SupaPlay / MegaPlay** — not in codebase (confirmed dead)
+| **Jikan** | OK — cached server-side |
+| **Anikoto** | OK — cached, secondary rail only |

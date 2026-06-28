@@ -8,9 +8,8 @@
  *
  * When adding a new provider:
  *   1. Add its entry below.
- *   2. Whitelist its hostname in `providerHosts.ts`.
- *   3. Verify Vidking-style /embed semantics: the iframe must be embeddable
- *      cross-origin (no X-Frame-Options: DENY).
+ *   2. Whitelist its hostname in `providerHosts.ts` and CSP `frame-src`.
+ *   3. Live-test the embed URL before wiring (see docs/anime-provider-test-matrix.md).
  *
  * PlayIMDb is intentionally split out as an external-only fallback because
  * it doesn't support cross-origin embedding and doesn't expose an
@@ -19,7 +18,12 @@
 
 import { env } from "@/lib/config/env";
 
-export type EmbedProviderId = "vidking" | "vidfast" | "vidlink" | "vidsrc-cc";
+export type EmbedProviderId =
+  | "vidking"
+  | "vidfast"
+  | "vidrock"
+  | "vidcore"
+  | "vidsrc-cc";
 
 export type ProviderAdQuality = "low" | "medium" | "heavy";
 
@@ -41,9 +45,8 @@ export type EmbedProvider = {
 const VIDKING_BASE = env.NEXT_PUBLIC_VIDKING_BASE.replace(/\/$/, "");
 
 /**
- * Ordered by ad-quality first, then by historical reliability. The watch
- * pages always present this order; the user's last manual choice is
- * persisted client-side and overrides the default.
+ * Ordered by reliability (live-tested 2026-06-28). VidLink removed — passes
+ * server-side HTML probe but streams fail or desync in real browsers.
  */
 export const embedProviders: EmbedProvider[] = [
   {
@@ -53,11 +56,6 @@ export const embedProviders: EmbedProvider[] = [
     tvUrl: (id, s, e) => `${VIDKING_BASE}/embed/tv/${id}/${s}/${e}`,
     adQuality: "low"
   },
-  // The "vid*" family below all accept a raw TMDb id and emit
-  // PLAYER_EVENT-style postMessages, so they slot in next to Vidking with no
-  // extra id resolution. They sit behind Cloudflare and 403 server-side fetches
-  // (see docs/streaming-providers-research.md), so they are direct-iframe-only:
-  // no server-side probe, just an extra manual server choice.
   {
     id: "vidfast",
     label: "VidFast",
@@ -66,10 +64,17 @@ export const embedProviders: EmbedProvider[] = [
     adQuality: "low"
   },
   {
-    id: "vidlink",
-    label: "VidLink",
-    movieUrl: (id) => `https://vidlink.pro/movie/${id}`,
-    tvUrl: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
+    id: "vidrock",
+    label: "VidRock",
+    movieUrl: (id) => `https://vidrock.net/embed/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidrock.net/embed/tv/${id}/${s}/${e}`,
+    adQuality: "low"
+  },
+  {
+    id: "vidcore",
+    label: "VidCore",
+    movieUrl: (id) => `https://vidcore.org/embed/movie/${id}`,
+    tvUrl: (id, s, e) => `https://vidcore.org/embed/tv/${id}/${s}/${e}`,
     adQuality: "medium"
   },
   {

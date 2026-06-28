@@ -13,12 +13,8 @@ type Props = {
   poster?: string | null;
   episode: number;
   episodeName?: string | null;
-  vidkingFallbackUrl?: string | null;
-  startWithVidking?: boolean;
   defaultServerId?: string | null;
   servers?: AnimeExtraServer[];
-  hasSub: boolean;
-  hasDub: boolean;
   episodeLabel?: string | null;
   nextEpisode?: number | null;
 };
@@ -30,12 +26,8 @@ export const AnimePlayerSection = ({
   poster,
   episode,
   episodeName,
-  vidkingFallbackUrl,
-  startWithVidking = false,
   defaultServerId = null,
   servers = [],
-  hasSub,
-  hasDub,
   episodeLabel,
   nextEpisode
 }: Props): JSX.Element => {
@@ -56,14 +48,10 @@ export const AnimePlayerSection = ({
         episodeName={episodeName ?? null}
       />
       <AnimePlayer
-        vidkingFallbackUrl={vidkingFallbackUrl}
-        startWithVidking={startWithVidking}
         defaultServerId={defaultServerId}
         servers={servers}
         poster={poster}
         titleId={titleId}
-        hasSub={hasSub}
-        hasDub={hasDub}
         episodeLabel={episodeLabel}
         nextEpisode={nextEpisode}
         onActiveSrcChange={onActiveSrcChange}
