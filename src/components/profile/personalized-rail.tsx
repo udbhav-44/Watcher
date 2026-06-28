@@ -1,52 +1,22 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { detailHrefFor } from "@/lib/catalog/titleId";
+import type { PersonalizedRecommendations } from "@/lib/personalization/recommendations";
 
-type Recommendation = {
-  titleId: string;
-  title: string;
-  posterUrl?: string | null;
-  basisTitle?: string | null;
-  releaseYear?: number | null;
+type Props = {
+  data: PersonalizedRecommendations;
 };
 
-type Payload = {
-  basis: { titleId: string; title: string; score: number } | null;
-  recommendations: Recommendation[];
-};
-
-export const PersonalizedRail = (): JSX.Element | null => {
-  const [data, setData] = useState<Payload | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async (): Promise<void> => {
-      const response = await fetch("/api/recommendations", {
-        credentials: "same-origin",
-        cache: "no-store"
-      });
-      if (!response.ok) {
-        if (!cancelled) setData(null);
-        return;
-      }
-      const payload = (await response.json()) as Payload;
-      if (!cancelled) setData(payload);
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!data || !data.basis || data.recommendations.length === 0) return null;
+export const PersonalizedRail = ({ data }: Props): JSX.Element | null => {
+  if (!data.basis || data.recommendations.length === 0) return null;
 
   return (
     <section className="space-y-4" aria-labelledby="personalized-rail-heading">
-      <h2 id="personalized-rail-heading" className="text-lg font-medium tracking-tight text-fg md:text-xl">
+      <h2
+        id="personalized-rail-heading"
+        className="text-lg font-medium tracking-tight text-fg md:text-xl"
+      >
         Because you liked{" "}
         <span className="text-accent">{data.basis.title}</span>
       </h2>
@@ -55,7 +25,7 @@ export const PersonalizedRail = (): JSX.Element | null => {
           <Link
             key={entry.titleId}
             href={detailHrefFor(entry.titleId)}
-            className="group w-[160px] shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70 outline-none"
+            className="group w-[160px] shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card transition outline-none hover:border-border-strong focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             <div className="relative aspect-[2/3] w-full bg-surface-3">
               {entry.posterUrl ? (
@@ -63,7 +33,7 @@ export const PersonalizedRail = (): JSX.Element | null => {
                   src={entry.posterUrl}
                   alt={entry.title}
                   fill
-                  className="object-cover transition duration-300 group-hover:scale-[1.04]"
+                  className="object-cover transition duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
                   sizes="160px"
                 />
               ) : (

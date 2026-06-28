@@ -1,12 +1,14 @@
 import { HeroRotation } from "@/components/movies/hero-rotation";
-import { getFeaturedRails } from "@/lib/data/movies";
-import { getTvFeaturedRails } from "@/lib/data/tv";
+import {
+  getCachedFeaturedRails,
+  getCachedTvFeaturedRails
+} from "@/lib/data/cached-catalog";
 import { dedupeByTitleId } from "@/lib/data/tmdb";
 
 export const HeroSection = async (): Promise<JSX.Element | null> => {
   const [movieRails, tvRails] = await Promise.all([
-    getFeaturedRails(),
-    getTvFeaturedRails()
+    getCachedFeaturedRails(),
+    getCachedTvFeaturedRails()
   ]);
 
   const heroPool = dedupeByTitleId(

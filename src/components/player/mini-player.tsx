@@ -104,8 +104,9 @@ export const MiniPlayerHost = (): JSX.Element | null => {
     setMinimized(true);
   }, [active, pathname]);
 
-  // Initialize frame on mount (client-only, avoids hydration mismatch).
+  // Initialize frame when the mini player becomes active (client-only).
   useEffect(() => {
+    if (!active || !minimized) return;
     const initial = loadFrame() ?? defaultFrame();
     setFrame(
       clampFrame(initial, { w: window.innerWidth, h: window.innerHeight })
@@ -119,7 +120,7 @@ export const MiniPlayerHost = (): JSX.Element | null => {
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [active, minimized]);
 
   const persist = useCallback((next: Frame): void => {
     try {

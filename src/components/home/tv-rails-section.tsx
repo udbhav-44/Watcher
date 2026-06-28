@@ -1,10 +1,10 @@
 import { MovieRail } from "@/components/movies/movie-rail";
-import { getOnTheAirTv, getTvFeaturedRails } from "@/lib/data/tv";
+import { getCachedOnTheAirTv, getCachedTvFeaturedRails } from "@/lib/data/cached-catalog";
 
 export const TvRailsSection = async (): Promise<JSX.Element> => {
   const [tvRails, onTheAir] = await Promise.all([
-    getTvFeaturedRails(),
-    getOnTheAirTv()
+    getCachedTvFeaturedRails(),
+    getCachedOnTheAirTv()
   ]);
 
   return (

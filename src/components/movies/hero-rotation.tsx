@@ -3,13 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform
-} from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Info, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,14 +23,8 @@ export const HeroRotation = ({
 }: Props): JSX.Element | null => {
   const [index, setIndex] = useState(0);
   const timerRef = useRef<number | null>(null);
-  const sectionRef = useRef<HTMLElement>(null);
   const systemReducedMotion = useReducedMotion();
   const motionOff = reducedMotion ?? systemReducedMotion ?? false;
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end start"]
-  });
-  const parallaxY = useTransform(scrollYProgress, [0, 1], [0, -48]);
 
   useEffect(() => {
     if (motionOff) return;
@@ -61,26 +49,19 @@ export const HeroRotation = ({
     .join("  ·  ");
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative isolate min-h-[min(78vh,720px)] overflow-hidden bg-base"
-    >
+    <section className="relative isolate min-h-[min(78vh,720px)] overflow-hidden bg-base">
       {heroArtwork && (
-        <motion.div
-          className="absolute inset-0"
-          style={motionOff ? undefined : { y: parallaxY }}
-        >
-          <AnimatePresence initial={false} mode="popLayout">
+        <div className="absolute inset-0">
+          <AnimatePresence initial={false} mode="sync">
             <motion.div
               key={hero.titleId}
               className="absolute inset-0"
-              initial={{ opacity: 0, scale: motionOff ? 1 : 1.05 }}
+              initial={{ opacity: 0 }}
               animate={{
                 opacity: 1,
-                scale: 1,
-                transition: { duration: motionOff ? 0 : 0.85 }
+                transition: { duration: motionOff ? 0 : 0.5 }
               }}
-              exit={{ opacity: 0, transition: { duration: 0.45 } }}
+              exit={{ opacity: 0, transition: { duration: 0.3 } }}
             >
               <Image
                 src={heroArtwork}
@@ -88,11 +69,11 @@ export const HeroRotation = ({
                 fill
                 className="object-cover object-top"
                 sizes="100vw"
-                priority
+                priority={index === 0}
               />
             </motion.div>
           </AnimatePresence>
-        </motion.div>
+        </div>
       )}
       <div className="absolute inset-0 bg-gradient-to-r from-base via-base/92 to-base/15" />
       <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20 to-transparent" />

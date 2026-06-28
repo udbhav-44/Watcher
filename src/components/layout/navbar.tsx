@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { Menu, Search, Tv, X } from "lucide-react";
 
+import { useSearchCommand } from "@/components/search/search-provider";
 import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { clientEnv } from "@/lib/config/clientEnv";
@@ -35,6 +36,7 @@ type Props = {
 
 export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
   const pathname = usePathname();
+  const { openSearch } = useSearchCommand();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const minimal = variant === "minimal";
@@ -44,12 +46,27 @@ export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
     : secondaryLinks;
 
   useEffect(() => {
+    let rafId = 0;
+    let lastScrolled = window.scrollY > 16;
+    setScrolled(lastScrolled);
+
     const handleScroll = (): void => {
-      setScrolled(window.scrollY > 16);
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        const next = window.scrollY > 16;
+        if (next !== lastScrolled) {
+          lastScrolled = next;
+          setScrolled(next);
+        }
+      });
     };
-    handleScroll();
+
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   useEffect(() => {
@@ -61,8 +78,8 @@ export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
       className={cn(
         "sticky top-0 z-30 transition-[background-color,border-color,backdrop-filter,padding] duration-200 ease-out-soft",
         scrolled || minimal
-          ? "border-b border-border bg-base/90 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent backdrop-blur-0"
+          ? "border-b border-border bg-base/95"
+          : "border-b border-transparent bg-transparent"
       )}
     >
       <nav
@@ -100,8 +117,9 @@ export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
         )}
 
         <div className="flex items-center gap-1.5">
-          <Link
-            href="/search"
+          <button
+            type="button"
+            onClick={openSearch}
             className={cn(
               "inline-flex items-center gap-2 rounded-full border border-border bg-fg/[0.04] text-fg-muted transition hover:border-border-strong hover:bg-fg/[0.08] hover:text-fg",
               minimal
@@ -119,7 +137,7 @@ export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
                 </kbd>
               </>
             )}
-          </Link>
+          </button>
           <ProfileAvatar />
           {!minimal && (
             <Button
@@ -138,6 +156,17 @@ export const Navbar = ({ variant = "default" }: Props): JSX.Element => {
 
       {open && !minimal && (
         <div className="mx-auto mb-3 flex w-full max-w-7xl flex-col gap-1 px-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              openSearch();
+            }}
+            className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-fg-muted transition hover:bg-fg/[0.08] hover:text-fg"
+          >
+            <Search className="h-4 w-4" />
+            Search catalog
+          </button>
           {primaryLinks.map((link) => (
             <Link
               href={link.href}

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import { AppShell } from "@/components/layout/app-shell";
-import { KeyboardShortcuts } from "@/components/layout/keyboard-shortcuts";
 import { ServiceWorkerRegister } from "@/components/layout/service-worker-register";
 import { MiniPlayerHost } from "@/components/player/mini-player";
 import { ToastProvider } from "@/components/ui/toast";
@@ -29,7 +28,6 @@ export default function RootLayout({
           Skip to content
         </a>
         <ToastProvider>
-          <KeyboardShortcuts />
           <AppShell>{children}</AppShell>
           <MiniPlayerHost />
           <ServiceWorkerRegister />

@@ -1,26 +1,12 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { useEffect, useState } from "react";
 
 import { detailHrefFor, watchHrefFor } from "@/lib/catalog/titleId";
+import type { UpNextEntry } from "@/lib/personalization/seriesProgress";
 
-type UpNextEntry = {
-  titleId: string;
-  title: string;
-  posterUrl: string | null;
-  backdropUrl: string | null;
-  season: number;
-  episode: number;
-  episodeName: string;
-  episodeStillUrl: string | null;
-  totalEpisodes: number;
-  watchedEpisodes: number;
-  completionPercent: number;
-  progressPercent: number;
-  reason: "in_progress" | "next_episode" | "in_watchlist";
+type Props = {
+  entries: UpNextEntry[];
 };
 
 const reasonLabel = (reason: UpNextEntry["reason"]): string => {
@@ -29,43 +15,24 @@ const reasonLabel = (reason: UpNextEntry["reason"]): string => {
   return "Start watching";
 };
 
-export const UpNextRail = (): JSX.Element | null => {
-  const [entries, setEntries] = useState<UpNextEntry[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async (): Promise<void> => {
-      const response = await fetch("/api/up-next", {
-        credentials: "same-origin",
-        cache: "no-store"
-      });
-      if (!response.ok) {
-        if (!cancelled) setEntries([]);
-        return;
-      }
-      const data = (await response.json()) as { upNext?: UpNextEntry[] };
-      if (!cancelled) setEntries(data.upNext ?? []);
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!entries || entries.length === 0) return null;
+export const UpNextRail = ({ entries }: Props): JSX.Element | null => {
+  if (entries.length === 0) return null;
 
   return (
     <section className="space-y-4" aria-labelledby="up-next-heading">
-      <h2 id="up-next-heading" className="text-lg font-medium tracking-tight text-fg md:text-xl">
+      <h2
+        id="up-next-heading"
+        className="text-lg font-medium tracking-tight text-fg md:text-xl"
+      >
         Up next on TV
       </h2>
       <div className="rail-scroll -mx-4 flex gap-3 overflow-x-auto px-4 pb-2">
         {entries.map((entry) => {
           const watchHref =
-            `${watchHrefFor(entry.titleId)}?s=${entry.season}&e=${entry.episode}` as Route;
+            `${watchHrefFor(entry.show.titleId)}?s=${entry.season}&e=${entry.episode}` as Route;
           return (
             <div
-              key={`${entry.titleId}-${entry.season}-${entry.episode}`}
+              key={`${entry.show.titleId}-${entry.season}-${entry.episode}`}
               className="min-w-[280px] overflow-hidden rounded-lg border border-border bg-surface-2 shadow-card"
             >
               <Link href={watchHref} className="block">
@@ -73,15 +40,15 @@ export const UpNextRail = (): JSX.Element | null => {
                   {entry.episodeStillUrl ? (
                     <Image
                       src={entry.episodeStillUrl}
-                      alt={`${entry.title} S${entry.season}E${entry.episode}`}
+                      alt={`${entry.show.title} S${entry.season}E${entry.episode}`}
                       fill
                       sizes="280px"
                       className="object-cover"
                     />
-                  ) : entry.backdropUrl ? (
+                  ) : entry.show.backdropUrl ? (
                     <Image
-                      src={entry.backdropUrl}
-                      alt={entry.title}
+                      src={entry.show.backdropUrl}
+                      alt={entry.show.title}
                       fill
                       sizes="280px"
                       className="object-cover"
@@ -93,7 +60,7 @@ export const UpNextRail = (): JSX.Element | null => {
                     <p className="text-xs tracking-[0.18em] text-accent uppercase">
                       {reasonLabel(entry.reason)}
                     </p>
-                    <p className="text-sm font-medium">{entry.title}</p>
+                    <p className="text-sm font-medium">{entry.show.title}</p>
                     <p className="text-xs text-fg-muted tabular-nums">
                       S{entry.season}  ·  E{entry.episode}
                       {entry.episodeName ? `  ·  ${entry.episodeName}` : ""}
@@ -113,7 +80,7 @@ export const UpNextRail = (): JSX.Element | null => {
               </Link>
               <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-fg-faint">
                 <Link
-                  href={detailHrefFor(entry.titleId)}
+                  href={detailHrefFor(entry.show.titleId)}
                   className="transition hover:text-fg"
                 >
                   Details

@@ -1,38 +1,15 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Play } from "lucide-react";
 
 import { watchHrefFor } from "@/lib/catalog/titleId";
-import type { MovieCard as MovieCardType } from "@/lib/types";
+import type { ContinueWatchingItem } from "@/lib/personalization/continueWatching";
 
-type WatchEvent = {
-  id: string;
-  titleId: string;
-  progressPercent: number;
-  completed?: boolean;
-  mediaType?: "movie" | "tv" | "anime";
-  season?: number | null;
-  episode?: number | null;
+type Props = {
+  items: ContinueWatchingItem[];
 };
 
-type ResumeItem = WatchEvent & {
-  movie?: MovieCardType;
-};
-
-const resumeKey = (event: WatchEvent): string => {
-  if (event.mediaType === "tv" && event.season && event.episode) {
-    return `${event.titleId}:${event.season}:${event.episode}`;
-  }
-  if (event.mediaType === "anime" && event.episode) {
-    return `${event.titleId}:e${event.episode}`;
-  }
-  return event.titleId;
-};
-
-const resumeHref = (item: ResumeItem): string => {
+const resumeHref = (item: ContinueWatchingItem): string => {
   const base = watchHrefFor(item.titleId);
   if (item.mediaType === "tv" && item.season && item.episode) {
     return `${base}?s=${item.season}&e=${item.episode}`;
@@ -43,57 +20,8 @@ const resumeHref = (item: ResumeItem): string => {
   return base;
 };
 
-export const ContinueWatching = (): JSX.Element | null => {
-  const [items, setItems] = useState<ResumeItem[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async (): Promise<void> => {
-      try {
-        const res = await fetch("/api/watch-events");
-        const data = (await res.json()) as { events?: WatchEvent[] };
-        const seen = new Set<string>();
-        const filtered = (data.events ?? [])
-          .filter((event) => {
-            if (event.completed) return false;
-            if (event.progressPercent <= 5 || event.progressPercent >= 90) {
-              return false;
-            }
-            const key = resumeKey(event);
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          })
-          .slice(0, 8);
-        if (cancelled) return;
-        setItems(filtered);
-        const enriched = await Promise.all(
-          filtered.map(async (event): Promise<ResumeItem> => {
-            try {
-              const response = await fetch(`/api/movies/${event.titleId}`);
-              if (!response.ok) return event;
-              const payload = (await response.json()) as {
-                movie?: MovieCardType;
-              };
-              return { ...event, movie: payload.movie ?? undefined };
-            } catch {
-              return event;
-            }
-          })
-        );
-        if (cancelled) return;
-        setItems(enriched);
-      } catch {
-        if (!cancelled) setItems([]);
-      }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!items || items.length === 0) return null;
+export const ContinueWatchingRail = ({ items }: Props): JSX.Element | null => {
+  if (items.length === 0) return null;
 
   return (
     <section className="space-y-4" aria-labelledby="rail-continue-watching">
@@ -138,7 +66,7 @@ export const ContinueWatching = (): JSX.Element | null => {
                     src={artwork}
                     alt={title}
                     fill
-                    className="object-cover transition duration-300 group-hover:scale-[1.03]"
+                    className="object-cover transition duration-300 group-hover:scale-[1.02] motion-reduce:group-hover:scale-100"
                     sizes="260px"
                   />
                 ) : (

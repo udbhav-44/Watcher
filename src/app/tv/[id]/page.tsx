@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { isTvTitleId } from "@/lib/catalog/titleId";
 import { getSimilarTv, getTvDetailByTitleId } from "@/lib/data/tv";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 1800;
 
 type Props = {
   params: { id: string };

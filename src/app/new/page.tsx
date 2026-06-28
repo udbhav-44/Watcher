@@ -2,7 +2,7 @@ import { MovieRail } from "@/components/movies/movie-rail";
 import { getNowPlayingMovies } from "@/lib/data/movies";
 import { getOnTheAirTv } from "@/lib/data/tv";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 1800;
 
 export default async function NewArrivalsPage(): Promise<JSX.Element> {
   const [nowPlaying, onTheAir] = await Promise.all([

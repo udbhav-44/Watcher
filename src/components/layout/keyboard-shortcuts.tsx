@@ -11,11 +11,21 @@ const isInputElement = (target: EventTarget | null): boolean => {
   return false;
 };
 
-export const KeyboardShortcuts = (): null => {
+type Props = {
+  onOpenSearch: () => void;
+};
+
+export const KeyboardShortcuts = ({ onOpenSearch }: Props): null => {
   const router = useRouter();
 
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        onOpenSearch();
+        return;
+      }
+
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (isInputElement(event.target)) {
         if (event.key === "Escape" && event.target instanceof HTMLElement) {
@@ -27,13 +37,7 @@ export const KeyboardShortcuts = (): null => {
       switch (event.key) {
         case "/": {
           event.preventDefault();
-          const input = document.querySelector<HTMLInputElement>("input#q");
-          if (input) {
-            input.focus();
-            input.select();
-          } else {
-            router.push("/search");
-          }
+          onOpenSearch();
           break;
         }
         case "h":
@@ -58,7 +62,7 @@ export const KeyboardShortcuts = (): null => {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [router]);
+  }, [onOpenSearch, router]);
 
   return null;
 };

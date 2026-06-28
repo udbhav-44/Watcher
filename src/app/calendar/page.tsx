@@ -7,7 +7,7 @@ import { detailHrefFor, watchHrefFor } from "@/lib/catalog/titleId";
 import { getUpcomingEpisodesForProfile } from "@/lib/personalization/calendar";
 import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString(undefined, {

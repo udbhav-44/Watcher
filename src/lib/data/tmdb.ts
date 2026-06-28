@@ -191,9 +191,14 @@ export const tmdbFetch = async <T>(
   return null;
 };
 
+export const POSTER_SIZE_RAIL = "w300" as const;
+export const POSTER_SIZE_DETAIL = "w500" as const;
+export const BACKDROP_SIZE = "w780" as const;
+export const STILL_SIZE = "w300" as const;
+
 export const toImageUrl = (
   path: string | null | undefined,
-  size: "w185" | "w300" | "w500" | "w780" | "original" = "w500"
+  size: "w185" | "w300" | "w500" | "w780" | "original" = POSTER_SIZE_RAIL
 ): string | null => (path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null);
 
 export const releaseYearFromDate = (date?: string | null): number | null => {
@@ -263,8 +268,8 @@ export const toMovieCardFromTmdb = (
     imdbTitleId: imdbTitleId ?? null,
     title: movie.title,
     synopsis: movie.overview,
-    posterUrl: toImageUrl(movie.poster_path, "w500"),
-    backdropUrl: toImageUrl(movie.backdrop_path, "w780"),
+    posterUrl: toImageUrl(movie.poster_path, POSTER_SIZE_RAIL),
+    backdropUrl: toImageUrl(movie.backdrop_path, BACKDROP_SIZE),
     releaseYear: releaseYearFromDate(movie.release_date),
     durationMinutes: movie.runtime ?? null,
     voteAverage: movie.vote_average ?? null,
@@ -294,8 +299,8 @@ export const toTvCardFromTmdb = (
     imdbTitleId: imdbTitleId ?? show.external_ids?.imdb_id ?? null,
     title: show.name,
     synopsis: show.overview,
-    posterUrl: toImageUrl(show.poster_path, "w500"),
-    backdropUrl: toImageUrl(show.backdrop_path, "w780"),
+    posterUrl: toImageUrl(show.poster_path, POSTER_SIZE_RAIL),
+    backdropUrl: toImageUrl(show.backdrop_path, BACKDROP_SIZE),
     releaseYear: releaseYearFromDate(show.first_air_date),
     durationMinutes: show.episode_run_time?.[0] ?? null,
     voteAverage: show.vote_average ?? null,
