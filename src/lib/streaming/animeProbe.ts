@@ -1,5 +1,7 @@
 import "server-only";
 
+import { memoryCache } from "@/lib/cache/memoryCache";
+
 const ERROR_MARKERS = [
   "Error - MegaPlay",
   "We can't find the file you are looking for",
@@ -24,21 +26,32 @@ const PLAYABLE_MARKERS = [
 export const probeAnimeEmbedUrl = async (url: string): Promise<boolean> => {
   if (!url.startsWith("https://")) return false;
 
+  const cacheKey = `anime-probe:${url}`;
+  const cached = memoryCache.get<boolean>(cacheKey);
+  if (cached !== undefined) return cached;
+
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(8_000),
       cache: "no-store",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
       }
     });
-    if (!response.ok) return false;
+    if (!response.ok) {
+      memoryCache.set(cacheKey, false, 30 * 60 * 1000);
+      return false;
+    }
 
     const html = await response.text();
-    if (ERROR_MARKERS.some((marker) => html.includes(marker))) return false;
-    return PLAYABLE_MARKERS.some((marker) => html.includes(marker));
+    const playable =
+      !ERROR_MARKERS.some((marker) => html.includes(marker)) &&
+      PLAYABLE_MARKERS.some((marker) => html.includes(marker));
+    memoryCache.set(cacheKey, playable, playable ? 60 * 60 * 1000 : 30 * 60 * 1000);
+    return playable;
   } catch {
+    memoryCache.set(cacheKey, false, 30 * 60 * 1000);
     return false;
   }
 };
