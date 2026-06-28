@@ -4,15 +4,17 @@ import { z } from "zod";
 export type MediaType = "movie" | "tv" | "anime";
 
 export const titleIdPattern =
-  /^(tt\d+|tmdb-tv-\d+|tmdb-\d+|anikoto-\d+)$/i;
+  /^(tt\d+|tmdb-tv-\d+|tmdb-\d+|mal-\d+|anikoto-\d+)$/i;
 
 export const titleIdSchema = z.string().regex(titleIdPattern, "Invalid title id");
 
 export const isTvTitleId = (titleId: string): boolean =>
   titleId.toLowerCase().startsWith("tmdb-tv-");
 
-export const isAnimeTitleId = (titleId: string): boolean =>
-  titleId.toLowerCase().startsWith("anikoto-");
+export const isAnimeTitleId = (titleId: string): boolean => {
+  const lower = titleId.toLowerCase();
+  return lower.startsWith("mal-") || lower.startsWith("anikoto-");
+};
 
 export const mediaTypeFromTitleId = (titleId: string): MediaType => {
   if (isTvTitleId(titleId)) return "tv";
@@ -33,6 +35,13 @@ export const tmdbIdFromTitleId = (titleId: string): number | null => {
   return null;
 };
 
+export const malIdFromTitleId = (titleId: string): number | null => {
+  const lower = titleId.toLowerCase();
+  if (!lower.startsWith("mal-")) return null;
+  const value = Number(lower.replace("mal-", ""));
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
 export const anikotoIdFromTitleId = (titleId: string): number | null => {
   const lower = titleId.toLowerCase();
   if (!lower.startsWith("anikoto-")) return null;
@@ -42,6 +51,7 @@ export const anikotoIdFromTitleId = (titleId: string): number | null => {
 
 export const tvTitleIdFromTmdb = (tmdbId: number): string => `tmdb-tv-${tmdbId}`;
 export const movieTitleIdFromTmdb = (tmdbId: number): string => `tmdb-${tmdbId}`;
+export const animeTitleIdFromMal = (malId: number): string => `mal-${malId}`;
 export const animeTitleIdFromAnikoto = (anikotoId: number): string =>
   `anikoto-${anikotoId}`;
 

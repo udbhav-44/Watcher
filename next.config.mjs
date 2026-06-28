@@ -9,6 +9,7 @@ const scriptSrc = [
 const connectSrc = [
   "'self'",
   "https://api.themoviedb.org",
+  "https://api.jikan.moe",
   "https://anikotoapi.site",
   "https://*.sentry.io",
   "https:",
@@ -19,10 +20,9 @@ const contentSecurityPolicy = [
   `script-src ${scriptSrc}`,
   // Embeddable provider iframes. `https:` already permits all of these, but the
   // named hosts document exactly which aggregators we surface as servers:
-  // Vidking (movie/TV/anime) plus the direct-iframe family VidFast / VidLink /
-  // Vidsrc.cc (see providerHosts.ts). MegaPlay/SupaPlay were removed (dead).
+  // Vidking (movie/TV/anime) plus direct-iframe family VidFast / VidLink / Vidsrc.cc.
   "frame-src 'self' https://www.vidking.net https://vidfast.pro https://vidlink.pro https://vidsrc.cc https:",
-  "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com https://cdn.anipixcdn.co https://*.anipixcdn.co",
+  "img-src 'self' data: https://image.tmdb.org https://m.media-amazon.com https://cdn.anipixcdn.co https://*.anipixcdn.co https://cdn.myanimelist.net https://*.myanimelist.net",
   `connect-src ${connectSrc}`,
   "style-src 'self' 'unsafe-inline'",
   "media-src 'self' https:",
@@ -59,11 +59,11 @@ const nextConfig = {
     ];
   },
   images: {
-    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "m.media-amazon.com" },
       { protocol: "https", hostname: "image.tmdb.org" },
-      { protocol: "https", hostname: "cdn.anipixcdn.co" }
+      { protocol: "https", hostname: "cdn.anipixcdn.co" },
+      { protocol: "https", hostname: "cdn.myanimelist.net" }
     ]
   }
 };

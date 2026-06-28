@@ -57,22 +57,23 @@ export default async function AnimeWatchPage({
       })
     : null;
 
-  const servers = currentEpisode
-    ? buildAnimeExtraServers({
+  const { servers, defaultServerId } = currentEpisode
+    ? await buildAnimeExtraServers({
         episodeNumber: currentEpisode.number,
         malId: anime.malId,
         aniId: anime.aniId
       })
-    : [];
-  const firstServerUrl = servers.find((server) => server.urls.length > 0)
-    ?.urls[0];
+    : { servers: [], defaultServerId: null };
+
+  const defaultServer = servers.find((server) => server.id === defaultServerId);
+  const firstServerUrl =
+    defaultServer?.urls[0] ??
+    servers.find((server) => server.urls.length > 0)?.urls[0];
 
   if (!firstServerUrl && !vidkingFallback) {
     return notFound();
   }
 
-  // Start on the first real anime server (Vidsrc.cc, then VidLink); only open
-  // straight on the Vidking TMDB fallback when no direct server resolves.
   const startWithVidking = !firstServerUrl && Boolean(vidkingFallback);
   const embedUrl = startWithVidking
     ? (vidkingFallback?.url ?? "")
@@ -96,9 +97,10 @@ export default async function AnimeWatchPage({
             episodeName={currentEpisode?.title ?? null}
             vidkingFallbackUrl={vidkingFallback?.url ?? null}
             startWithVidking={startWithVidking}
+            defaultServerId={defaultServerId}
             servers={servers}
-            hasSub={currentEpisode?.hasSub ?? false}
-            hasDub={currentEpisode?.hasDub ?? false}
+            hasSub={currentEpisode?.hasSub ?? true}
+            hasDub={currentEpisode?.hasDub ?? true}
             episodeLabel={episodeLabel}
             nextEpisode={nextEpisodeEntry?.number ?? null}
           />

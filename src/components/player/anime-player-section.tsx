@@ -15,6 +15,7 @@ type Props = {
   episodeName?: string | null;
   vidkingFallbackUrl?: string | null;
   startWithVidking?: boolean;
+  defaultServerId?: string | null;
   servers?: AnimeExtraServer[];
   hasSub: boolean;
   hasDub: boolean;
@@ -31,6 +32,7 @@ export const AnimePlayerSection = ({
   episodeName,
   vidkingFallbackUrl,
   startWithVidking = false,
+  defaultServerId = null,
   servers = [],
   hasSub,
   hasDub,
@@ -56,6 +58,7 @@ export const AnimePlayerSection = ({
       <AnimePlayer
         vidkingFallbackUrl={vidkingFallbackUrl}
         startWithVidking={startWithVidking}
+        defaultServerId={defaultServerId}
         servers={servers}
         poster={poster}
         titleId={titleId}

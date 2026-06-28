@@ -23,6 +23,7 @@ const VIDKING_ID = "vidking";
 type Props = {
   vidkingFallbackUrl?: string | null;
   startWithVidking?: boolean;
+  defaultServerId?: string | null;
   servers?: AnimeExtraServer[];
   poster?: string | null;
   titleId: string;
@@ -36,6 +37,7 @@ type Props = {
 export const AnimePlayer = ({
   vidkingFallbackUrl = null,
   startWithVidking = false,
+  defaultServerId = null,
   servers = [],
   poster,
   titleId,
@@ -56,11 +58,13 @@ export const AnimePlayer = ({
     [servers]
   );
 
-  // The first real anime server (Vidsrc.cc, then VidLink) is the new default;
-  // the Vidking TMDB fallback is used only when no direct server resolves.
+  // Verified MAL-keyed server first, else Vidking when probed OK.
   const firstAvailableId = useMemo(
-    (): string => availableServers[0]?.id ?? VIDKING_ID,
-    [availableServers]
+    (): string =>
+      defaultServerId && availableServers.some((s) => s.id === defaultServerId)
+        ? defaultServerId
+        : (availableServers[0]?.id ?? VIDKING_ID),
+    [availableServers, defaultServerId]
   );
 
   const [activeProvider, setActiveProvider] = useState<string>(() =>
@@ -356,52 +360,41 @@ export const AnimePlayer = ({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-14 shrink-0 text-xs tracking-[0.18em] text-fg-faint uppercase">
-            Server
-          </span>
-          {servers.map((server) => {
-            const available = server.urls.length > 0;
-            return (
+        {(availableServers.length > 0 || hasVidkingFallback) && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-14 shrink-0 text-xs tracking-[0.18em] text-fg-faint uppercase">
+              Server
+            </span>
+            {availableServers.map((server) => (
               <Button
                 key={server.id}
                 type="button"
                 size="sm"
                 variant={activeProvider === server.id ? "primary" : "outline"}
-                disabled={!available}
                 onClick={() => selectServer(server.id)}
-                className={cn(!available && "opacity-50")}
-                title={
-                  available
-                    ? `${server.label} stream (Sub/Dub via path)`
-                    : `No ${server.label} match for this episode`
-                }
+                title={`${server.label} stream`}
               >
                 {server.label}
               </Button>
-            );
-          })}
-          <Button
-            type="button"
-            size="sm"
-            variant={activeProvider === VIDKING_ID ? "primary" : "outline"}
-            disabled={!hasVidkingFallback}
-            onClick={() => selectServer(VIDKING_ID)}
-            className={cn(!hasVidkingFallback && "opacity-50")}
-            title={
-              hasVidkingFallback
-                ? "TMDB-catalog stream (carries its own audio)"
-                : "No Vidking match for this episode"
-            }
-          >
-            Vidking
-          </Button>
-        </div>
+            ))}
+            {hasVidkingFallback && (
+              <Button
+                type="button"
+                size="sm"
+                variant={activeProvider === VIDKING_ID ? "primary" : "outline"}
+                onClick={() => selectServer(VIDKING_ID)}
+                title="TMDB-catalog stream (carries its own audio)"
+              >
+                Vidking
+              </Button>
+            )}
+          </div>
+        )}
 
         <p className="text-xs text-fg-faint">
-          Vidsrc.cc and VidLink carry separate Sub and Dub tracks (toggle above).
-          Quality, captions, and any extra audio tracks can also be changed from
-          the player&apos;s own settings (gear) menu.
+          {availableServers.length > 0
+            ? "MAL-keyed servers support Sub/Dub via the toggle above when available."
+            : "Vidking maps this title to TMDB TV — use the player settings for audio and quality."}
         </p>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { tvTitleIdFromTmdb } from "@/lib/catalog/titleId";
+import { probeAnimeEmbedUrl } from "@/lib/streaming/animeProbe";
 import { tmdbFetch } from "@/lib/data/tmdb";
 import { resolveProviderUrlsFromIdentifier } from "@/lib/streaming/resolveProviders";
 
@@ -239,7 +240,7 @@ export const resolveVidkingAnimeFallback = async (options: {
     seasonNumber,
     options.episodeNumber
   );
-  if (!url) return null;
+  if (!url || !(await probeAnimeEmbedUrl(url))) return null;
 
   return {
     tmdbTvId,
