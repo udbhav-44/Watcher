@@ -36,31 +36,39 @@ export const buildAnimeExtraServers = async (
   const { episodeNumber, malId, aniId } = options;
   const servers: AnimeExtraServer[] = [];
 
+  const candidates: Array<{ id: string; label: string; url: string }> = [];
   const vidsrcId = aniId ?? malId;
   if (vidsrcId) {
-    const url = `https://vidsrc.cc/v2/embed/anime/${vidsrcId}/${episodeNumber}/sub`;
-    if (await probeAnimeEmbedUrl(url)) {
-      servers.push({
-        id: "vidsrc-cc",
-        label: "Vidsrc.cc",
-        urls: [url],
-        supportsLanguageToggle: true,
-        adQuality: "medium"
-      });
-    }
+    candidates.push({
+      id: "vidsrc-cc",
+      label: "Vidsrc.cc",
+      url: `https://vidsrc.cc/v2/embed/anime/${vidsrcId}/${episodeNumber}/sub`
+    });
+  }
+  if (malId) {
+    candidates.push({
+      id: "vidlink",
+      label: "VidLink",
+      url: `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true`
+    });
   }
 
-  if (malId) {
-    const url = `https://vidlink.pro/anime/${malId}/${episodeNumber}/sub?fallback=true`;
-    if (await probeAnimeEmbedUrl(url)) {
-      servers.push({
-        id: "vidlink",
-        label: "VidLink",
-        urls: [url],
-        supportsLanguageToggle: true,
-        adQuality: "medium"
-      });
-    }
+  const probed = await Promise.all(
+    candidates.map(async (candidate) => ({
+      candidate,
+      ok: await probeAnimeEmbedUrl(candidate.url)
+    }))
+  );
+
+  for (const { candidate, ok } of probed) {
+    if (!ok) continue;
+    servers.push({
+      id: candidate.id,
+      label: candidate.label,
+      urls: [candidate.url],
+      supportsLanguageToggle: true,
+      adQuality: "medium"
+    });
   }
 
   return {
