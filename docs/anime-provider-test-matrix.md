@@ -19,7 +19,7 @@ All anime playback uses the **same TMDB resolver as the TV tab**:
 1. MAL/Jikan catalog → resolve TMDB TV id (title search + MAL/AniList find)
 2. Parse season from title (`Season 7` → season 7)
 3. Build embed URLs via `resolveProviderUrlsFromIdentifier`
-4. Server switcher: Vidking (probed) → VidFast → VidRock → VidCore → Vidsrc.cc
+4. Server switcher (anime order): **VidFast** → VidRock → VidCore → Vidking → Vidsrc.cc
 
 ## Subtitles / audio
 

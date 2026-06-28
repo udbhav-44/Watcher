@@ -1,5 +1,5 @@
 import { tvTitleIdFromTmdb } from "@/lib/catalog/titleId";
-import { probeAnimeEmbedUrl } from "@/lib/streaming/animeProbe";
+import type { EmbedProviderId } from "@/lib/streaming/providers";
 import {
   resolveProviderUrlsFromIdentifier,
   type ResolvedProvider
@@ -9,10 +9,18 @@ import {
   resolveTmdbTvIdForAnime
 } from "@/lib/streaming/vidkingAnime";
 
+/** Anime defaults — VidFast first; Vidking often stops mid-episode in-browser. */
+const ANIME_PROVIDER_ORDER: EmbedProviderId[] = [
+  "vidfast",
+  "vidrock",
+  "vidcore",
+  "vidking",
+  "vidsrc-cc"
+];
+
 /**
  * A verified anime server surfaced in the watch-page switcher.
- * TMDB-keyed providers (same resolver as the TV tab) — only Vidking is
- * server-probed; others are iframe-only (Cloudflare-safe).
+ * TMDB-keyed providers (same resolver as the TV tab), reordered for anime.
  */
 export type AnimeExtraServer = {
   id: string;
@@ -66,22 +74,18 @@ export const buildAnimeExtraServers = async (
     { season: seasonNumber, episode: options.episodeNumber }
   );
 
-  const servers: AnimeExtraServer[] = [];
+  const byId = new Map(providers.map((entry) => [entry.id, entry]));
+  const ordered = ANIME_PROVIDER_ORDER.map((id) => byId.get(id)).filter(
+    (entry): entry is ResolvedProvider => entry != null
+  );
 
-  for (const provider of providers) {
-    if (provider.id === "vidking") {
-      const ok = await probeAnimeEmbedUrl(provider.url);
-      if (!ok) continue;
-    }
-
-    servers.push({
-      id: provider.id,
-      label: provider.label,
-      urls: [provider.url],
-      supportsLanguageToggle: false,
-      adQuality: provider.adQuality
-    });
-  }
+  const servers: AnimeExtraServer[] = ordered.map((provider) => ({
+    id: provider.id,
+    label: provider.label,
+    urls: [provider.url],
+    supportsLanguageToggle: false,
+    adQuality: provider.adQuality
+  }));
 
   return {
     servers,

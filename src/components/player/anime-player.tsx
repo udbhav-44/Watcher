@@ -21,6 +21,23 @@ type Props = {
   onActiveSrcChange?: (src: string) => void;
 };
 
+const hostFromUrl = (url: string): string | null => {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+};
+
+const originMatchesHost = (origin: string, host: string): boolean => {
+  try {
+    const originHost = new URL(origin).hostname.toLowerCase();
+    return originHost === host || originHost.endsWith(`.${host}`);
+  } catch {
+    return false;
+  }
+};
+
 export const AnimePlayer = ({
   defaultServerId = null,
   servers = [],
@@ -44,6 +61,7 @@ export const AnimePlayer = ({
   );
 
   const preferredServerRef = useRef<string | null>(null);
+  const failedServersRef = useRef<Set<string>>(new Set());
 
   const resolveDefaultProvider = useCallback((): string | null => {
     const preferred = preferredServerRef.current;
@@ -59,7 +77,7 @@ export const AnimePlayer = ({
   const [activeProvider, setActiveProvider] = useState<string | null>(() =>
     firstAvailableId
   );
-  const [playbackFailed, setPlaybackFailed] = useState(false);
+  const [embedWarning, setEmbedWarning] = useState<string | null>(null);
 
   const activeServer = useMemo(
     () => availableServers.find((server) => server.id === activeProvider) ?? null,
@@ -67,6 +85,7 @@ export const AnimePlayer = ({
   );
 
   const activeSrc = activeServer?.urls[0] ?? "";
+  const activeSrcHost = useMemo(() => hostFromUrl(activeSrc), [activeSrc]);
 
   useEffect(() => {
     try {
@@ -78,38 +97,67 @@ export const AnimePlayer = ({
   }, []);
 
   useEffect(() => {
+    failedServersRef.current = new Set();
     setActiveProvider(resolveDefaultProvider());
-    setPlaybackFailed(false);
+    setEmbedWarning(null);
   }, [resolveDefaultProvider, titleId, episodeLabel]);
 
   useEffect(() => {
     if (activeSrc) onActiveSrcChange?.(activeSrc);
   }, [activeSrc, onActiveSrcChange]);
 
+  const selectServer = useCallback(
+    (next: string): void => {
+      if (next === activeProvider) return;
+      if (!availableServers.some((server) => server.id === next)) return;
+
+      preferredServerRef.current = next;
+      try {
+        window.localStorage.setItem(SERVER_KEY, next);
+      } catch {
+        // ignore
+      }
+      setActiveProvider(next);
+      setEmbedWarning(null);
+    },
+    [activeProvider, availableServers]
+  );
+
+  const tryNextServer = useCallback((): void => {
+    if (!activeProvider) return;
+    failedServersRef.current.add(activeProvider);
+
+    const nextServer = availableServers.find(
+      (server) => !failedServersRef.current.has(server.id)
+    );
+    if (nextServer) {
+      setEmbedWarning(
+        `${activeServer?.label ?? "This server"} stopped — trying ${nextServer.label}.`
+      );
+      selectServer(nextServer.id);
+      return;
+    }
+
+    setEmbedWarning(
+      "This server reported a playback error. Pick another server below."
+    );
+  }, [activeProvider, activeServer?.label, availableServers, selectServer]);
+
   useEffect(() => {
     const onMessage = (event: MessageEvent): void => {
+      if (!activeSrcHost || !originMatchesHost(event.origin, activeSrcHost)) {
+        return;
+      }
+
       const parsed = parseEmbedMessage(event.data);
       if (!parsed || parsed.kind !== "error") return;
-      setPlaybackFailed(true);
+
+      tryNextServer();
     };
 
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
-
-  const selectServer = (next: string): void => {
-    if (next === activeProvider) return;
-    if (!availableServers.some((server) => server.id === next)) return;
-
-    preferredServerRef.current = next;
-    try {
-      window.localStorage.setItem(SERVER_KEY, next);
-    } catch {
-      // ignore
-    }
-    setActiveProvider(next);
-    setPlaybackFailed(false);
-  };
+  }, [activeSrcHost, tryNextServer]);
 
   const nextEpisodeHref =
     nextEpisode != null
@@ -132,23 +180,44 @@ export const AnimePlayer = ({
 
   return (
     <div className="space-y-3">
-      {!playbackFailed && activeSrc ? (
-        <StreamingPlayer src={activeSrc} poster={poster} titleId={titleId} />
+      {activeSrc ? (
+        <StreamingPlayer
+          key={activeSrc}
+          src={activeSrc}
+          poster={poster}
+          titleId={titleId}
+        />
       ) : (
         <div className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg border border-border bg-black/80 px-6 text-center">
           <p className="text-sm font-medium text-fg">
-            Playback unavailable for this episode.
-          </p>
-          <p className="text-xs text-fg-muted">
-            This server could not load the episode. Try another server below.
+            No stream URL for this server.
           </p>
         </div>
       )}
 
-      {playbackFailed && (
+      {embedWarning && (
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
-          <p className="text-sm text-fg">Try another server below.</p>
+          <p className="text-sm text-fg">{embedWarning}</p>
           <div className="mt-3 flex flex-wrap gap-2">
+            {availableServers.length > 1 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const currentIndex = availableServers.findIndex(
+                    (server) => server.id === activeProvider
+                  );
+                  const next =
+                    availableServers[
+                      (currentIndex + 1) % availableServers.length
+                    ];
+                  if (next) selectServer(next.id);
+                }}
+              >
+                Try next server
+              </Button>
+            )}
             {nextEpisodeHref && (
               <Link
                 href={nextEpisodeHref}
@@ -190,7 +259,10 @@ export const AnimePlayer = ({
               type="button"
               size="sm"
               variant={activeProvider === server.id ? "primary" : "outline"}
-              onClick={() => selectServer(server.id)}
+              onClick={() => {
+                failedServersRef.current.delete(server.id);
+                selectServer(server.id);
+              }}
               title={`${server.label} stream`}
             >
               {server.label}
@@ -199,9 +271,9 @@ export const AnimePlayer = ({
         </div>
 
         <p className="text-xs text-fg-faint">
-          Audio, subtitles, and quality are controlled inside each player&apos;s
-          settings menu (⚙). Subtitle timing is set by the stream provider — we
-          cannot adjust sync from outside the player.
+          VidFast is the default for anime — Vidking often stops mid-episode.
+          Audio, subtitles, and quality are in each player&apos;s settings menu
+          (⚙). Subtitle timing is set by the stream provider.
         </p>
       </div>
     </div>
