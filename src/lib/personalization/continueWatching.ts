@@ -13,20 +13,37 @@ type WatchEventRow = {
   mediaType?: "movie" | "tv" | "anime";
   season?: number | null;
   episode?: number | null;
+  watchedAt?: Date;
 };
 
 export type ContinueWatchingItem = WatchEventRow & {
   movie?: MovieCard;
 };
 
-const resumeKey = (event: WatchEventRow): string => {
-  if (event.mediaType === "tv" && event.season && event.episode) {
-    return `${event.titleId}:${event.season}:${event.episode}`;
-  }
-  if (event.mediaType === "anime" && event.episode) {
-    return `${event.titleId}:e${event.episode}`;
-  }
-  return event.titleId;
+const isInProgress = (event: WatchEventRow): boolean => {
+  if (event.completed) return false;
+  if (event.progressPercent <= 5 || event.progressPercent >= 90) return false;
+  return true;
+};
+
+/**
+ * Pick at most one resume point per title. TV is excluded — the Up next rail
+ * handles series with episode stills and next-episode logic.
+ */
+export const pickContinueWatchingEvents = (
+  events: WatchEventRow[]
+): WatchEventRow[] => {
+  const seen = new Set<string>();
+
+  return events
+    .filter((event) => {
+      if (event.mediaType === "tv") return false;
+      if (!isInProgress(event)) return false;
+      if (seen.has(event.titleId)) return false;
+      seen.add(event.titleId);
+      return true;
+    })
+    .slice(0, 8);
 };
 
 const resolveTitleCard = async (titleId: string): Promise<MovieCard | null> => {
@@ -48,25 +65,21 @@ export const getContinueWatchingItems = async (
     const events = await prisma.watchEvent.findMany({
       where: { profileKey },
       orderBy: { watchedAt: "desc" },
-      take: 80
+      take: 120
     });
 
-    const seen = new Set<string>();
-    const filtered = events
-      .filter((event) => {
-        if (event.completed) return false;
-        if (event.progressPercent <= 5 || event.progressPercent >= 90) {
-          return false;
-        }
-        const key = resumeKey({
-          ...event,
-          mediaType: event.mediaType as WatchEventRow["mediaType"]
-        });
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 8);
+    const filtered = pickContinueWatchingEvents(
+      events.map((event) => ({
+        id: event.id,
+        titleId: event.titleId,
+        progressPercent: event.progressPercent,
+        completed: event.completed,
+        mediaType: event.mediaType as WatchEventRow["mediaType"],
+        season: event.season,
+        episode: event.episode,
+        watchedAt: event.watchedAt
+      }))
+    );
 
     const enriched = await Promise.all(
       filtered.map(async (event): Promise<ContinueWatchingItem> => {
@@ -76,7 +89,7 @@ export const getContinueWatchingItems = async (
           titleId: event.titleId,
           progressPercent: event.progressPercent,
           completed: event.completed,
-          mediaType: event.mediaType as ContinueWatchingItem["mediaType"],
+          mediaType: event.mediaType,
           season: event.season,
           episode: event.episode,
           movie: movie ?? undefined
@@ -84,7 +97,7 @@ export const getContinueWatchingItems = async (
       })
     );
 
-    return enriched;
+    return enriched.filter((item) => item.movie != null);
   } catch {
     return [];
   }

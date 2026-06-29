@@ -22,6 +22,100 @@ export type UpNextEntry = {
   reason: "in_progress" | "next_episode" | "in_watchlist";
 };
 
+const episodeKey = (season: number, episode: number): string =>
+  `${season}:${episode}`;
+
+type CatalogEpisode = {
+  season: number;
+  episode: number;
+  name: string;
+  stillPath: string | null;
+};
+
+type WatchEventSnapshot = {
+  season: number | null;
+  episode: number | null;
+  progressPercent: number;
+  completed: boolean;
+};
+
+/** Pick resume / next episode using only seasons that exist in TMDB. */
+export const resolveUpNextEpisode = (
+  watchEvents: WatchEventSnapshot[],
+  orderedEpisodes: CatalogEpisode[]
+): {
+  nextEpisode: CatalogEpisode;
+  reason: UpNextEntry["reason"];
+  progressPercent: number;
+  watchedKeys: Set<string>;
+} => {
+  const validKeys = new Set(
+    orderedEpisodes.map((ep) => episodeKey(ep.season, ep.episode))
+  );
+  const watchedKeys = new Set<string>();
+
+  for (const event of watchEvents) {
+    if (event.season == null || event.episode == null) continue;
+    const key = episodeKey(event.season, event.episode);
+    if (!validKeys.has(key)) continue;
+    if (event.completed || event.progressPercent >= 90) {
+      watchedKeys.add(key);
+    }
+  }
+
+  for (const event of watchEvents) {
+    if (event.season == null || event.episode == null) continue;
+    const key = episodeKey(event.season, event.episode);
+    if (!validKeys.has(key)) continue;
+
+    const inProgress =
+      !event.completed && event.progressPercent > 5 && event.progressPercent < 90;
+    if (!inProgress) continue;
+
+    const exact = orderedEpisodes.find(
+      (ep) => ep.season === event.season && ep.episode === event.episode
+    );
+    if (exact) {
+      return {
+        nextEpisode: exact,
+        reason: "in_progress",
+        progressPercent: event.progressPercent,
+        watchedKeys
+      };
+    }
+  }
+
+  for (const event of watchEvents) {
+    if (event.season == null || event.episode == null) continue;
+    const key = episodeKey(event.season, event.episode);
+    if (!validKeys.has(key)) continue;
+    if (!event.completed && event.progressPercent < 90) continue;
+
+    const lastIndex = orderedEpisodes.findIndex(
+      (ep) => ep.season === event.season && ep.episode === event.episode
+    );
+    if (lastIndex >= 0 && orderedEpisodes[lastIndex + 1]) {
+      return {
+        nextEpisode: orderedEpisodes[lastIndex + 1],
+        reason: "next_episode",
+        progressPercent: 0,
+        watchedKeys
+      };
+    }
+  }
+
+  const firstUnwatched = orderedEpisodes.find(
+    (ep) => !watchedKeys.has(episodeKey(ep.season, ep.episode))
+  );
+
+  return {
+    nextEpisode: firstUnwatched ?? orderedEpisodes[0],
+    reason: "in_watchlist",
+    progressPercent: 0,
+    watchedKeys
+  };
+};
+
 const fetchEpisodesByShow = async (
   tmdbId: number,
   totalSeasons: number
@@ -59,7 +153,7 @@ const fetchSeriesIndex = async (
   const totalSeasons = show.number_of_seasons ?? 1;
   const episodes = await fetchEpisodesByShow(
     tmdbId,
-    Math.max(1, Math.min(totalSeasons, 8))
+    Math.max(1, Math.min(totalSeasons, 15))
   );
   return { show, episodes };
 };
@@ -161,25 +255,7 @@ export const computeUpNext = async (
         })
       ]);
 
-      if (!series) return null;
-
-      const watchedKeys = new Set<string>();
-      let lastWatched: { season: number; episode: number; progressPercent: number } | null = null;
-
-      for (const event of watchEvents) {
-        if (event.season != null && event.episode != null) {
-          if (!lastWatched && (event.completed || event.progressPercent > 5)) {
-            lastWatched = {
-              season: event.season,
-              episode: event.episode,
-              progressPercent: event.progressPercent
-            };
-          }
-          if (event.completed || event.progressPercent > 90) {
-            watchedKeys.add(`${event.season}:${event.episode}`);
-          }
-        }
-      }
+      if (!series || series.episodes.length === 0) return null;
 
       const orderedEpisodes = series.episodes
         .slice()
@@ -189,37 +265,8 @@ export const computeUpNext = async (
             : a.episode - b.episode
         );
 
-      let nextEpisode = orderedEpisodes[0];
-      let reason: UpNextEntry["reason"] = "in_watchlist";
-      let progressPercent = 0;
-
-      if (lastWatched) {
-        if (lastWatched.progressPercent < 90) {
-          const exact = orderedEpisodes.find(
-            (entry) =>
-              entry.season === lastWatched!.season &&
-              entry.episode === lastWatched!.episode
-          );
-          if (exact) {
-            nextEpisode = exact;
-            reason = "in_progress";
-            progressPercent = lastWatched.progressPercent;
-          }
-        } else {
-          const lastIndex = orderedEpisodes.findIndex(
-            (entry) =>
-              entry.season === lastWatched!.season &&
-              entry.episode === lastWatched!.episode
-          );
-          if (lastIndex >= 0 && orderedEpisodes[lastIndex + 1]) {
-            nextEpisode = orderedEpisodes[lastIndex + 1];
-            reason = "next_episode";
-          } else if (lastIndex >= 0) {
-            nextEpisode = orderedEpisodes[lastIndex];
-            reason = "in_progress";
-          }
-        }
-      }
+      const { nextEpisode, reason, progressPercent, watchedKeys } =
+        resolveUpNextEpisode(watchEvents, orderedEpisodes);
 
       const total =
         series.show.number_of_episodes ?? orderedEpisodes.length;
