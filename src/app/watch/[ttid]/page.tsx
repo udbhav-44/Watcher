@@ -4,6 +4,7 @@ import { Play } from "lucide-react";
 
 import { MovieRail } from "@/components/movies/movie-rail";
 import { ActivePlayerBinder } from "@/components/player/active-player-binder";
+import { MovieWatchSession } from "@/components/player/movie-watch-session";
 import { ServerTogglePlayer } from "@/components/player/server-toggle-player";
 import { isAnimeTitleId, isTvTitleId } from "@/lib/catalog/titleId";
 import {
@@ -94,6 +95,7 @@ export default async function WatchPage({
               {movie.synopsis}
             </p>
           )}
+          <MovieWatchSession titleId={movie.titleId} />
         </div>
 
         {upNext ? (
