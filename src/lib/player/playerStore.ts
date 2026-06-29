@@ -15,25 +15,28 @@ export type ActivePlayer = {
   episodeName?: string | null;
 };
 
+export type PlaybackSnapshot = {
+  currentTime: number;
+  duration: number;
+  progressPercent: number;
+};
+
 export type PlayerState = {
   active: ActivePlayer | null;
   minimized: boolean;
+  playback: PlaybackSnapshot | null;
+  paused: boolean;
+  volume: number;
 };
 
 const STORAGE_KEY = "campusstream:active-player";
-const INITIAL_STATE: PlayerState = { active: null, minimized: false };
-
-/**
- * Hydration note: we intentionally do NOT rehydrate from sessionStorage at
- * module load. That used to cause a server/client mismatch — the server
- * renders with the empty initial state but the browser would have already
- * restored state on module evaluation, painting a mini-player div that
- * had no SSR counterpart.
- *
- * Instead, `usePlayerState` starts with the empty state (matching SSR) and
- * runs restore() inside an effect after the first paint. Subscribers
- * receive the restored state via the normal notify channel.
- */
+const INITIAL_STATE: PlayerState = {
+  active: null,
+  minimized: false,
+  playback: null,
+  paused: false,
+  volume: 1
+};
 
 let state: PlayerState = INITIAL_STATE;
 let restored = false;
@@ -45,7 +48,16 @@ const persist = (): void => {
     window.sessionStorage.removeItem(STORAGE_KEY);
     return;
   }
-  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  window.sessionStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      active: state.active,
+      minimized: state.minimized,
+      playback: state.playback,
+      paused: state.paused,
+      volume: state.volume
+    })
+  );
 };
 
 const restoreFromStorage = (): void => {
@@ -55,9 +67,13 @@ const restoreFromStorage = (): void => {
   const raw = window.sessionStorage.getItem(STORAGE_KEY);
   if (!raw) return;
   try {
-    const parsed = JSON.parse(raw) as PlayerState;
+    const parsed = JSON.parse(raw) as Partial<PlayerState>;
     if (parsed && typeof parsed === "object" && parsed.active) {
-      state = parsed;
+      state = {
+        ...INITIAL_STATE,
+        ...parsed,
+        active: parsed.active
+      };
       listeners.forEach((listener) => listener(state));
     }
   } catch {
@@ -79,7 +95,13 @@ export const subscribe = (listener: Listener): (() => void) => {
 };
 
 export const setActivePlayer = (active: ActivePlayer | null): void => {
-  state = { ...state, active, minimized: active ? state.minimized : false };
+  state = {
+    ...state,
+    active,
+    minimized: active ? state.minimized : false,
+    playback: active ? state.playback : null,
+    paused: false
+  };
   notify();
 };
 
@@ -89,14 +111,31 @@ export const setMinimized = (minimized: boolean): void => {
   notify();
 };
 
+export const setPlaybackProgress = (playback: PlaybackSnapshot): void => {
+  if (!state.active) return;
+  state = { ...state, playback };
+  listeners.forEach((listener) => listener(state));
+  persist();
+};
+
+export const setPlayerPaused = (paused: boolean): void => {
+  if (!state.active) return;
+  state = { ...state, paused };
+  notify();
+};
+
+export const setPlayerVolume = (volume: number): void => {
+  if (!state.active) return;
+  state = { ...state, volume: Math.max(0, Math.min(1, volume)) };
+  notify();
+};
+
 export const closePlayer = (): void => {
-  state = { active: null, minimized: false };
+  state = { ...INITIAL_STATE };
   notify();
 };
 
 export const usePlayerState = (): PlayerState => {
-  // Always start with the SSR-safe empty state so client and server agree
-  // on the initial render.
   const [snapshot, setSnapshot] = useState<PlayerState>(INITIAL_STATE);
   useEffect(() => {
     restoreFromStorage();

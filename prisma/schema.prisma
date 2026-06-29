@@ -201,6 +201,21 @@ model SkipMarker {
   @@index([profileKey, titleId])
 }
 
+model WatchedTitle {
+  id         String   @id @default(cuid())
+  profileKey String
+  titleId    String
+  mediaType  String   @default("movie")
+  source     String   @default("auto")
+  season     Int?
+  episode    Int?
+  watchedAt  DateTime @default(now())
+
+  @@unique([profileKey, titleId])
+  @@index([profileKey, watchedAt])
+  @@index([titleId])
+}
+
 model FeaturedTheme {
   id          String   @id @default(cuid())
   slug        String   @unique

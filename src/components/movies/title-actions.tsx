@@ -5,6 +5,7 @@ import { Bookmark, ChevronDown, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { WatchedToggle } from "@/components/movies/watched-toggle";
 
 type Collection = {
   id: string;
@@ -184,6 +185,7 @@ export const TitleActions = ({
 
   return (
     <div className="relative z-10 flex flex-wrap items-center gap-2">
+      <WatchedToggle titleId={titleId} title={title} />
       <Button
         type="button"
         variant={inDefault ? "subtle" : "outline"}

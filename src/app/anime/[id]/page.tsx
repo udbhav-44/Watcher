@@ -6,6 +6,7 @@ import { Play } from "lucide-react";
 
 import { isAnimeTitleId } from "@/lib/catalog/titleId";
 import { getAnimeDetailByTitleId } from "@/lib/data/anime";
+import { WatchedToggle } from "@/components/movies/watched-toggle";
 
 type Props = {
   params: { id: string };
@@ -66,13 +67,16 @@ export default async function AnimeDetailPage({
               {anime.genres.join("  ·  ")}
             </p>
           )}
-          <Link
-            href={`/anime/${anime.titleId}/watch` as Route}
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-fg-on-accent transition hover:bg-accent-hover"
-          >
-            <Play className="h-4 w-4 fill-current" />
-            Watch now
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/anime/${anime.titleId}/watch` as Route}
+              className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-fg-on-accent transition hover:bg-accent-hover"
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Watch now
+            </Link>
+            <WatchedToggle titleId={anime.titleId} title={anime.title} />
+          </div>
         </div>
       </div>
 

@@ -23,7 +23,8 @@ const secondaryLinks: ReadonlyArray<{ href: Route; label: string }> = [
   { href: "/new", label: "New" },
   { href: "/calendar", label: "Calendar" },
   { href: "/me/collections", label: "Collections" },
-  { href: "/me/watchlist", label: "Watchlist" }
+  { href: "/me/watchlist", label: "Watchlist" },
+  { href: "/me/watched" as Route, label: "Watched" }
 ];
 
 const adminLink = { href: "/admin/dashboard" as Route, label: "Admin" };

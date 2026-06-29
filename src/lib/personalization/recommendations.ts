@@ -3,6 +3,7 @@ import { isDbEnabled, prisma } from "@/lib/db";
 import { hasTmdb, toMovieCardFromTmdb, toTvCardFromTmdb, tmdbFetch } from "@/lib/data/tmdb";
 import type { TmdbMovie, TmdbTvShow } from "@/lib/data/tmdb";
 import type { MovieCard } from "@/lib/types";
+import { getWatchedTitleIds } from "@/lib/personalization/watched";
 
 type Basis = {
   titleId: string;
@@ -67,12 +68,17 @@ export const getPersonalizedRecommendations = async (
       return { basis: null, recommendations: [] };
     }
 
-    const [basisTitle, similar] = await Promise.all([
+    const [basisTitle, similar, watchedIds] = await Promise.all([
       lookupTitleName(topRating.titleId),
-      fetchSimilar(topRating.titleId)
+      fetchSimilar(topRating.titleId),
+      getWatchedTitleIds(profileKey)
     ]);
 
-    if (similar.length === 0) {
+    const filtered = similar.filter(
+      (card) => !watchedIds.has(card.titleId)
+    );
+
+    if (filtered.length === 0) {
       return {
         basis: basisTitle
           ? {
@@ -91,7 +97,7 @@ export const getPersonalizedRecommendations = async (
         title: basisTitle ?? topRating.titleId,
         score: topRating.score
       },
-      recommendations: similar
+      recommendations: filtered
     };
   } catch {
     return { basis: null, recommendations: [] };

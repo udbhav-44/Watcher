@@ -8,7 +8,8 @@ import {
   type TmdbMovie,
   type TmdbTvShow
 } from "@/lib/data/tmdb";
-import { isDbEnabled, prisma } from "@/lib/db";
+import { isDbEnabled } from "@/lib/db";
+import { getWatchedTitleIds } from "@/lib/personalization/watched";
 import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
 
 export async function GET(request: Request): Promise<Response> {
@@ -23,16 +24,7 @@ export async function GET(request: Request): Promise<Response> {
   let watchedTitleIds = new Set<string>();
   if (isDbEnabled()) {
     try {
-      const events = await prisma.watchEvent.findMany({
-        where: { profileKey },
-        select: { titleId: true }
-      });
-      watchedTitleIds = new Set(events.map((entry) => entry.titleId));
-      const collectionItems = await prisma.collectionItem.findMany({
-        where: { collection: { profileKey } },
-        select: { titleId: true }
-      });
-      collectionItems.forEach((item) => watchedTitleIds.add(item.titleId));
+      watchedTitleIds = await getWatchedTitleIds(profileKey);
     } catch {
       // ignore
     }

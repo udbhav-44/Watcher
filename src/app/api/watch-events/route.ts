@@ -6,6 +6,7 @@ import {
   titleIdSchema
 } from "@/lib/catalog/titleId";
 import { isDbEnabled, prisma } from "@/lib/db";
+import { maybeAutoMarkWatched } from "@/lib/personalization/watched";
 import { getProfileKeyFromCookie } from "@/lib/profile/sessionProfile";
 
 const eventSchema = z.object({
@@ -82,6 +83,17 @@ export async function POST(request: Request): Promise<Response> {
         episode: parsed.data.episode ?? null
       }
     });
+
+    void maybeAutoMarkWatched(
+      profileKey,
+      parsed.data.titleId,
+      mediaType,
+      parsed.data.progressPercent,
+      parsed.data.completed,
+      parsed.data.season ?? null,
+      parsed.data.episode ?? null
+    );
+
     return NextResponse.json({ event });
   } catch {
     return NextResponse.json(

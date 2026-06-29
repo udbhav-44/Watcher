@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { parseEmbedMessage } from "@/lib/player/embedEvents";
+import { setPlaybackProgress } from "@/lib/player/playerStore";
 
 type MediaType = "movie" | "tv" | "anime";
 
@@ -97,7 +98,8 @@ export const EmbedWatchRecorder = ({
       }
 
       if (parsed.kind === "progress" && parsed.progress) {
-        const { currentTime, progressPercent } = parsed.progress;
+        const { currentTime, duration, progressPercent } = parsed.progress;
+        setPlaybackProgress({ currentTime, duration, progressPercent });
         maybeRecord(Math.floor(currentTime), progressPercent);
       }
     };
